@@ -19,9 +19,11 @@
 
 package org.apache.iotdb.db.mpp.sql.statement;
 
+import org.apache.iotdb.db.mpp.sql.statement.component.InPredicate;
 import org.apache.iotdb.db.mpp.sql.statement.crud.InsertStatement;
 import org.apache.iotdb.db.mpp.sql.statement.crud.InsertTabletStatement;
 import org.apache.iotdb.db.mpp.sql.statement.crud.QueryStatement;
+import org.apache.iotdb.db.mpp.sql.statement.crud.SubqueryExpression;
 import org.apache.iotdb.db.mpp.sql.statement.metadata.AlterTimeSeriesStatement;
 import org.apache.iotdb.db.mpp.sql.statement.metadata.CreateAlignedTimeSeriesStatement;
 import org.apache.iotdb.db.mpp.sql.statement.metadata.CreateTimeSeriesStatement;
@@ -84,5 +86,17 @@ public abstract class StatementVisitor<R, C> {
 
   public R visitInsertTablet(InsertTabletStatement insertTabletStatement, C context) {
     return visitStatement(insertTabletStatement, context);
+  }
+
+  public R visitExpression(Expression expression, C context) {
+    return visitNode(expression, context);
+  }
+
+  public R visitSubquery(SubqueryExpression subqueryExpression, C context) {
+    return visitExpression(subqueryExpression, context);
+  }
+
+  public R visitInPredicate(InPredicate inPredicate, C context) {
+    return visitExpression(inPredicate, context);
   }
 }

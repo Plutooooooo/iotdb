@@ -285,7 +285,7 @@ public class LogicalPlanner {
     }
   }
 
-  private class PlanBuilder {
+  public class PlanBuilder {
 
     private PlanNode root;
 
