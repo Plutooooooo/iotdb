@@ -18,9 +18,6 @@
  */
 package org.apache.iotdb.db.mpp.operator.process.subquery;
 
-import static java.util.Objects.requireNonNull;
-
-import java.io.IOException;
 import org.apache.iotdb.db.mpp.operator.Operator;
 import org.apache.iotdb.db.mpp.operator.OperatorContext;
 import org.apache.iotdb.db.mpp.operator.process.ProcessOperator;
@@ -32,6 +29,10 @@ import org.apache.iotdb.db.mpp.operator.process.subquery.common.LongBuildSideHas
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.common.block.TsBlock;
 
+import java.io.IOException;
+
+import static java.util.Objects.requireNonNull;
+
 public class HashSetBuilderOperator implements ProcessOperator {
 
   private final OperatorContext operatorContext;
@@ -41,12 +42,16 @@ public class HashSetBuilderOperator implements ProcessOperator {
   private BuildSideHashSet buildSideHashSet;
   private static int ESTIMATED_COUNT = 10000;
 
-  public HashSetBuilderOperator(OperatorContext operatorContext, Operator buildSource, int hashChannel, TSDataType sourceType){
+  public HashSetBuilderOperator(
+      OperatorContext operatorContext,
+      Operator buildSource,
+      int hashChannel,
+      TSDataType sourceType) {
     this.operatorContext = requireNonNull(operatorContext, "operatorContext is null");
-    this.buildSource = requireNonNull(buildSource,"buildSource is null");
+    this.buildSource = requireNonNull(buildSource, "buildSource is null");
     this.hashChannel = hashChannel;
     this.sourceType = sourceType;
-    this.buildSideHashSet = createBuildSideHashSet(sourceType,hashChannel,ESTIMATED_COUNT);
+    this.buildSideHashSet = createBuildSideHashSet(sourceType, hashChannel, ESTIMATED_COUNT);
   }
 
   @Override
@@ -55,12 +60,17 @@ public class HashSetBuilderOperator implements ProcessOperator {
   }
 
   @Override
-  public TsBlock next() throws IOException {
+  public TsBlock next() {
     return null;
   }
 
   @Override
-  public boolean hasNext() throws IOException {
+  public boolean hasNext() {
+    return false;
+  }
+
+  @Override
+  public boolean isFinished() throws IOException {
     return false;
   }
 
@@ -68,16 +78,17 @@ public class HashSetBuilderOperator implements ProcessOperator {
     return buildSideHashSet;
   }
 
-  private BuildSideHashSet createBuildSideHashSet(TSDataType tsDataType,int hashChannel, int estimatedElementCount){
-    switch (tsDataType){
+  private BuildSideHashSet createBuildSideHashSet(
+      TSDataType tsDataType, int hashChannel, int estimatedElementCount) {
+    switch (tsDataType) {
       case INT32:
-        return new IntBuildSideHashSet(hashChannel,estimatedElementCount);
+        return new IntBuildSideHashSet(hashChannel, estimatedElementCount);
       case INT64:
-        return new LongBuildSideHashSet(hashChannel,estimatedElementCount);
+        return new LongBuildSideHashSet(hashChannel, estimatedElementCount);
       case FLOAT:
-        return new FloatBuildSideHashSet(hashChannel,estimatedElementCount);
+        return new FloatBuildSideHashSet(hashChannel, estimatedElementCount);
       case DOUBLE:
-        return new DoubleBuildSideHashSet(hashChannel,estimatedElementCount);
+        return new DoubleBuildSideHashSet(hashChannel, estimatedElementCount);
       default:
         throw new IllegalArgumentException("illegal type");
     }

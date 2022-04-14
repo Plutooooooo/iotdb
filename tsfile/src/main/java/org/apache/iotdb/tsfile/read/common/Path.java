@@ -170,8 +170,9 @@ public class Path implements Serializable, Comparable<Path> {
   public int getColumnNum() {
     return 1;
   }
+
   public static void main(String[] args) {
-    Path path = new Path("root.sg.'www.baidu.com'.a",true);
+    Path path = new Path("root.sg.'www.baidu.com'.a", true);
     System.out.println(path.getDevice());
   }
 }

@@ -18,15 +18,16 @@
  */
 package org.apache.iotdb.db.mpp.sql.statement.crud;
 
-import java.util.Objects;
 import org.apache.iotdb.db.mpp.sql.statement.Expression;
 import org.apache.iotdb.db.mpp.sql.statement.StatementVisitor;
+
+import java.util.Objects;
 
 public class SubqueryExpression extends Expression {
 
   private final QueryStatement queryStatement;
 
-  public SubqueryExpression(QueryStatement queryStatement){
+  public SubqueryExpression(QueryStatement queryStatement) {
     this.queryStatement = queryStatement;
   }
 
@@ -36,12 +37,11 @@ public class SubqueryExpression extends Expression {
 
   @Override
   public <R, C> R accept(StatementVisitor<R, C> visitor, C context) {
-    return visitor.visitSubquery(this, context);
+    return visitor.visitNode(this, context);
   }
 
   @Override
-  public boolean equals(Object o)
-  {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -54,8 +54,7 @@ public class SubqueryExpression extends Expression {
   }
 
   @Override
-  public int hashCode()
-  {
+  public int hashCode() {
     return queryStatement.hashCode();
   }
 }

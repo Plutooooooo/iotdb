@@ -18,6 +18,4 @@
  */
 package org.apache.iotdb.db.mpp.operator.process.subquery;
 
-public class NestedLoopJoinOperator {
-
-}
+public class NestedLoopJoinOperator {}

@@ -18,6 +18,7 @@
  */
 package org.apache.iotdb.confignode.consensus.response;
 
+import org.apache.iotdb.common.rpc.thrift.TSStatus;
 import org.apache.iotdb.confignode.partition.StorageGroupSchema;
 import org.apache.iotdb.consensus.common.DataSet;
 
@@ -25,13 +26,25 @@ import java.util.List;
 
 public class StorageGroupSchemaDataSet implements DataSet {
 
-  private final List<StorageGroupSchema> schemaList;
+  private TSStatus status;
 
-  public StorageGroupSchemaDataSet(List<StorageGroupSchema> schemaList) {
-    this.schemaList = schemaList;
+  private List<StorageGroupSchema> schemaList;
+
+  public StorageGroupSchemaDataSet() {}
+
+  public TSStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(TSStatus status) {
+    this.status = status;
   }
 
   public List<StorageGroupSchema> getSchemaList() {
     return schemaList;
+  }
+
+  public void setSchemaList(List<StorageGroupSchema> schemaList) {
+    this.schemaList = schemaList;
   }
 }

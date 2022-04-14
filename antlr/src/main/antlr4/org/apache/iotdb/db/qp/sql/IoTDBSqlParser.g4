@@ -833,6 +833,7 @@ comparisonOperator
 
 inClause
     : OPERATOR_NOT? OPERATOR_IN LR_BRACKET constant (COMMA constant)* RR_BRACKET
+    | OPERATOR_NOT? OPERATOR_IN LR_BRACKET selectStatement RR_BRACKET
     ;
 
 indexPredicateClause

@@ -18,6 +18,4 @@
  */
 package org.apache.iotdb.db.mpp.sql.statement;
 
-public abstract class Expression extends StatementNode{
-
-}
+public abstract class Expression extends StatementNode {}

@@ -18,35 +18,27 @@
  */
 package org.apache.iotdb.db.mpp.sql.planner;
 
-import static com.google.common.base.Preconditions.checkState;
-
-import com.google.common.collect.ImmutableList;
-import org.apache.iotdb.db.mpp.sql.analyze.Analysis;
-import org.apache.iotdb.db.mpp.sql.planner.LogicalPlanner.PlanBuilder;
-import org.apache.iotdb.db.mpp.sql.statement.Expression;
-import org.apache.iotdb.db.mpp.sql.statement.Statement;
-import org.apache.iotdb.db.mpp.sql.statement.StatementNode;
-import org.apache.iotdb.db.mpp.sql.statement.component.InPredicate;
-import org.apache.iotdb.db.mpp.sql.statement.crud.SubqueryExpression;
-
 public class SubqueryPlanner {
-  private final Analysis analysis;
-  public SubqueryPlanner(Analysis analysis) {
-    this.analysis = analysis;
-  }
-
-  public PlanBuilder handleUncorrelatedSubqueries(PlanBuilder builder, Expression expression, StatementNode node){
-    return null;
-  }
-
-  private PlanBuilder handleInPredicate(PlanBuilder subPlan, InPredicate inPredicate, StatementNode node){
-    subPlan = handleUncorrelatedSubqueries(subPlan, inPredicate.getValue(), node);
-    checkState(inPredicate.getValueList() instanceof SubqueryExpression);
-    SubqueryExpression valueListSubquery = (SubqueryExpression) inPredicate.getValueList();
-    PlanBuilder subqueryPlan = createPlanBuilder(uncoercedValueListSubquery);
-
-  }
-  private PlanBuilder handleScalarSubquery(PlanBuilder subPlan, Expression expression, StatementNode node){
-    return null;
-  }
+  //  private final Analysis analysis;
+  //  public SubqueryPlanner(Analysis analysis) {
+  //    this.analysis = analysis;
+  //  }
+  //
+  //  public QueryPlanBuilder handleUncorrelatedSubqueries(QueryPlanBuilder builder, Expression
+  // expression, StatementNode node){
+  //    return null;
+  //  }
+  //
+  //  private QueryPlanBuilder handleInPredicate(QueryPlanBuilder subPlan, InPredicate inPredicate,
+  // StatementNode node){
+  //    subPlan = handleUncorrelatedSubqueries(subPlan, inPredicate.getValue(), node);
+  //    checkState(inPredicate.getValueList() instanceof SubqueryExpression);
+  //    SubqueryExpression valueListSubquery = (SubqueryExpression) inPredicate.getValueList();
+  //    QueryPlanBuilder subqueryPlan = createPlanBuilder(uncoercedValueListSubquery);
+  //
+  //  }
+  //  private QueryPlanBuilder handleScalarSubquery(QueryPlanBuilder subPlan, Expression expression,
+  // StatementNode node){
+  //    return null;
+  //  }
 }

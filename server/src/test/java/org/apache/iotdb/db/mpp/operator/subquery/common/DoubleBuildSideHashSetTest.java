@@ -18,34 +18,36 @@
  */
 package org.apache.iotdb.db.mpp.operator.subquery.common;
 
-import static org.junit.Assert.assertTrue;
-
-import java.util.Collections;
 import org.apache.iotdb.db.mpp.operator.process.subquery.common.DoubleBuildSideHashSet;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.common.block.TsBlock;
 import org.apache.iotdb.tsfile.read.common.block.TsBlockBuilder;
 import org.apache.iotdb.tsfile.read.common.block.column.Column;
+
 import org.junit.Test;
+
+import java.util.Collections;
+
+import static org.junit.Assert.assertTrue;
 
 public class DoubleBuildSideHashSetTest {
 
   @Test
-  public void testAddTsBlock(){
+  public void testAddTsBlock() {
     TsBlock tsBlock = createTsBlockInOrder(100);
-    DoubleBuildSideHashSet set = new DoubleBuildSideHashSet(0,100);
+    DoubleBuildSideHashSet set = new DoubleBuildSideHashSet(0, 100);
     boolean success = set.addTsBlock(tsBlock);
     assertTrue(success);
   }
 
   @Test
-  public void testContains(){
+  public void testContains() {
     int positionCount = 10000;
     TsBlockBuilder builder = new TsBlockBuilder(Collections.singletonList(TSDataType.DOUBLE));
     Double[] value = new Double[positionCount];
     for (int i = 0; i < positionCount; i++) {
       builder.getTimeColumnBuilder().writeLong(i);
-      double random = Math.random()*(Integer.MAX_VALUE);
+      double random = Math.random() * (Integer.MAX_VALUE);
       value[i] = random;
       builder.getColumnBuilder(0).writeDouble(random);
       builder.declarePosition();
@@ -53,16 +55,16 @@ public class DoubleBuildSideHashSetTest {
 
     TsBlock tsBlock = builder.build();
     Column column = tsBlock.getColumn(0);
-    DoubleBuildSideHashSet set = new DoubleBuildSideHashSet(0,10000);
+    DoubleBuildSideHashSet set = new DoubleBuildSideHashSet(0, 10000);
     set.addTsBlock(tsBlock);
-    for(int i = 0;i< positionCount;i++){
+    for (int i = 0; i < positionCount; i++) {
       assertTrue(set.contains(value[i]));
-      assertTrue(set.contains(column,i));
+      assertTrue(set.contains(column, i));
     }
-    System.out.println("hashCollisions is : "+set.getHashCollisions());
+    System.out.println("hashCollisions is : " + set.getHashCollisions());
   }
 
-  private TsBlock createTsBlockInOrder(int positionCount){
+  private TsBlock createTsBlockInOrder(int positionCount) {
     TsBlockBuilder builder = new TsBlockBuilder(Collections.singletonList(TSDataType.DOUBLE));
     for (int i = 0; i < positionCount; i++) {
       builder.getTimeColumnBuilder().writeLong(i);

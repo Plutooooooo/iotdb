@@ -18,41 +18,35 @@
  */
 package org.apache.iotdb.db.mpp.sql.statement.component;
 
-import java.util.Objects;
 import org.apache.iotdb.db.mpp.sql.statement.Expression;
 import org.apache.iotdb.db.mpp.sql.statement.StatementVisitor;
 
-public class InPredicate
-    extends Expression
-{
+import java.util.Objects;
+
+public class InPredicate extends Expression {
   private final Expression value;
   private final Expression valueList;
 
-  private InPredicate(Expression value, Expression valueList)
-  {
+  private InPredicate(Expression value, Expression valueList) {
     this.value = value;
     this.valueList = valueList;
   }
 
-  public Expression getValue()
-  {
+  public Expression getValue() {
     return value;
   }
 
-  public Expression getValueList()
-  {
+  public Expression getValueList() {
     return valueList;
   }
 
   @Override
-  public <R, C> R accept(StatementVisitor<R, C> visitor, C context)
-  {
-    return visitor.visitInPredicate(this, context);
+  public <R, C> R accept(StatementVisitor<R, C> visitor, C context) {
+    return visitor.visitNode(this, context);
   }
 
   @Override
-  public boolean equals(Object o)
-  {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -61,13 +55,11 @@ public class InPredicate
     }
 
     InPredicate that = (InPredicate) o;
-    return Objects.equals(value, that.value) &&
-        Objects.equals(valueList, that.valueList);
+    return Objects.equals(value, that.value) && Objects.equals(valueList, that.valueList);
   }
 
   @Override
-  public int hashCode()
-  {
+  public int hashCode() {
     return Objects.hash(value, valueList);
   }
 }

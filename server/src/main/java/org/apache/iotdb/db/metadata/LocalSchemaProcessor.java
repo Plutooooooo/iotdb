@@ -26,7 +26,7 @@ import org.apache.iotdb.db.exception.metadata.MetadataException;
 import org.apache.iotdb.db.exception.metadata.PathAlreadyExistException;
 import org.apache.iotdb.db.exception.metadata.PathNotExistException;
 import org.apache.iotdb.db.exception.metadata.StorageGroupNotSetException;
-import org.apache.iotdb.db.exception.metadata.UndefinedTemplateException;
+import org.apache.iotdb.db.exception.metadata.template.UndefinedTemplateException;
 import org.apache.iotdb.db.metadata.lastCache.LastCacheManager;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
@@ -73,6 +73,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -117,6 +118,7 @@ import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.PATH_SEPARA
  *   <li>Interfaces for lastCache operations
  *   <li>Interfaces and Implementation for InsertPlan process
  *   <li>Interfaces and Implementation for Template operations
+ *   <li>Interfaces for Trigger
  *   <li>TestOnly Interfaces
  * </ol>
  */
@@ -441,6 +443,11 @@ public class LocalSchemaProcessor {
    */
   public int getAllTimeseriesCount(PartialPath pathPattern, boolean isPrefixMatch)
       throws MetadataException {
+    // todo this is for test assistance, refactor this to support massive timeseries
+    if (pathPattern.getFullPath().equals("root.**")
+        && TemplateManager.getInstance().getAllTemplateName().isEmpty()) {
+      return (int) TimeseriesStatistics.getInstance().getTotalSeriesNumber();
+    }
     int count = 0;
     for (SchemaRegion schemaRegion : getInvolvedSchemaRegions(pathPattern, isPrefixMatch)) {
       count += schemaRegion.getAllTimeseriesCount(pathPattern, isPrefixMatch);
@@ -496,15 +503,7 @@ public class LocalSchemaProcessor {
    */
   public int getNodesCountInGivenLevel(PartialPath pathPattern, int level, boolean isPrefixMatch)
       throws MetadataException {
-    Pair<Integer, Set<PartialPath>> pair =
-        configManager.getNodesCountInGivenLevel(pathPattern, level, isPrefixMatch);
-    int count = pair.left;
-    for (PartialPath storageGroup : pair.right) {
-      for (SchemaRegion schemaRegion : getInvolvedSchemaRegions(storageGroup, isPrefixMatch)) {
-        count += schemaRegion.getNodesCountInGivenLevel(pathPattern, level, isPrefixMatch);
-      }
-    }
-    return count;
+    return getNodesListInGivenLevel(pathPattern, level, isPrefixMatch).size();
   }
 
   /**
@@ -555,15 +554,27 @@ public class LocalSchemaProcessor {
 
   public List<PartialPath> getNodesListInGivenLevel(
       PartialPath pathPattern, int nodeLevel, StorageGroupFilter filter) throws MetadataException {
+    return getNodesListInGivenLevel(pathPattern, nodeLevel, false, filter);
+  }
+
+  private List<PartialPath> getNodesListInGivenLevel(
+      PartialPath pathPattern, int nodeLevel, boolean isPrefixMatch) throws MetadataException {
+    return getNodesListInGivenLevel(pathPattern, nodeLevel, isPrefixMatch, null);
+  }
+
+  private List<PartialPath> getNodesListInGivenLevel(
+      PartialPath pathPattern, int nodeLevel, boolean isPrefixMatch, StorageGroupFilter filter)
+      throws MetadataException {
     Pair<List<PartialPath>, Set<PartialPath>> pair =
-        configManager.getNodesListInGivenLevel(pathPattern, nodeLevel, filter);
-    List<PartialPath> result = pair.left;
+        configManager.getNodesListInGivenLevel(pathPattern, nodeLevel, isPrefixMatch, filter);
+    Set<PartialPath> result = new TreeSet<>(pair.left);
     for (PartialPath storageGroup : pair.right) {
       for (SchemaRegion schemaRegion : getSchemaRegionsByStorageGroup(storageGroup)) {
-        result.addAll(schemaRegion.getNodesListInGivenLevel(pathPattern, nodeLevel, filter));
+        result.addAll(
+            schemaRegion.getNodesListInGivenLevel(pathPattern, nodeLevel, isPrefixMatch, filter));
       }
     }
-    return result;
+    return new ArrayList<>(result);
   }
 
   /**
@@ -939,7 +950,7 @@ public class LocalSchemaProcessor {
    * created thus throw PathAlreadyExistException.
    */
   protected IMeasurementMNode getMeasurementMNode(IMNode deviceMNode, String measurementName)
-      throws PathAlreadyExistException {
+      throws MetadataException {
     IMNode result = deviceMNode.getChild(measurementName);
     if (result == null) {
       return null;
@@ -1354,6 +1365,25 @@ public class LocalSchemaProcessor {
 
   public void setUsingSchemaTemplate(ActivateTemplatePlan plan) throws MetadataException {
     configManager.setUsingSchemaTemplate(plan);
+  }
+
+  // endregion
+
+  // region Interfaces for Trigger
+
+  public IMeasurementMNode getMeasurementMNodeForTrigger(PartialPath fullPath)
+      throws MetadataException {
+    try {
+      return getBelongedSchemaRegion(fullPath).getMeasurementMNodeForTrigger(fullPath);
+    } catch (StorageGroupNotSetException e) {
+      throw new PathNotExistException(fullPath.getFullPath());
+    }
+  }
+
+  public void releaseMeasurementMNodeAfterDropTrigger(IMeasurementMNode measurementMNode)
+      throws MetadataException {
+    getBelongedSchemaRegion(measurementMNode.getPartialPath())
+        .releaseMeasurementMNodeAfterDropTrigger(measurementMNode);
   }
 
   // endregion

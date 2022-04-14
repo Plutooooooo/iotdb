@@ -18,10 +18,11 @@
  */
 package org.apache.iotdb.db.mpp.operator.process.subquery;
 
-import java.io.IOException;
 import org.apache.iotdb.db.mpp.operator.OperatorContext;
 import org.apache.iotdb.db.mpp.operator.process.ProcessOperator;
 import org.apache.iotdb.tsfile.read.common.block.TsBlock;
+
+import java.io.IOException;
 
 public class EnforceSingleRowOperator implements ProcessOperator {
 
@@ -31,12 +32,17 @@ public class EnforceSingleRowOperator implements ProcessOperator {
   }
 
   @Override
-  public TsBlock next() throws IOException {
+  public TsBlock next() {
     return null;
   }
 
   @Override
-  public boolean hasNext() throws IOException {
+  public boolean hasNext() {
+    return false;
+  }
+
+  @Override
+  public boolean isFinished() throws IOException {
     return false;
   }
 }

@@ -37,10 +37,15 @@ public class HashSemiJoinOperator implements ProcessOperator {
   private final int hashChannel;
   private BuildSideHashSet buildSideHashSet;
 
-  public HashSemiJoinOperator(OperatorContext operatorContext, Operator probeSource, HashSetBuilderOperator buildSource, int probeChannel, int hashChannel) {
+  public HashSemiJoinOperator(
+      OperatorContext operatorContext,
+      Operator probeSource,
+      HashSetBuilderOperator buildSource,
+      int probeChannel,
+      int hashChannel) {
     this.operatorContext = requireNonNull(operatorContext, "operatorContext is null");
     this.probeSource = requireNonNull(probeSource, "probeSource operator is null");
-    this.buildSource = requireNonNull(buildSource,"buildSource is null");
+    this.buildSource = requireNonNull(buildSource, "buildSource is null");
     this.buildSideHashSet = buildSource.getBuildSideHashSet();
     this.probeChannel = probeChannel;
     this.hashChannel = hashChannel;
@@ -52,12 +57,17 @@ public class HashSemiJoinOperator implements ProcessOperator {
   }
 
   @Override
-  public TsBlock next() throws IOException {
+  public TsBlock next() {
     return null;
   }
 
   @Override
-  public boolean hasNext() throws IOException {
+  public boolean hasNext() {
+    return false;
+  }
+
+  @Override
+  public boolean isFinished() throws IOException {
     return false;
   }
 }

@@ -19,10 +19,13 @@
 package org.apache.iotdb.db.mpp.sql.planner.plan.node.process;
 
 import org.apache.iotdb.commons.utils.TestOnly;
+import org.apache.iotdb.db.mpp.sql.planner.plan.IOutputPlanNode;
+import org.apache.iotdb.db.mpp.sql.planner.plan.node.ColumnHeader;
 import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanNode;
 import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanNodeId;
 import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanVisitor;
 import org.apache.iotdb.db.mpp.sql.statement.component.FilterNullPolicy;
+import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.utils.Pair;
 
 import com.google.common.collect.ImmutableList;
@@ -30,20 +33,23 @@ import com.google.common.collect.ImmutableList;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /** WithoutNode is used to discard specific rows from upstream node. */
-public class FilterNullNode extends ProcessNode {
+public class FilterNullNode extends ProcessNode implements IOutputPlanNode {
 
   // The policy to discard the result from upstream operator
-  private FilterNullPolicy discardPolicy;
+  private final FilterNullPolicy discardPolicy;
+
+  private final List<String> filterNullColumnNames;
 
   private PlanNode child;
 
-  private List<String> filterNullColumnNames;
-
-  public FilterNullNode(PlanNodeId id, PlanNode child) {
+  public FilterNullNode(
+      PlanNodeId id, FilterNullPolicy policy, List<String> filterNullColumnNames) {
     super(id);
-    this.child = child;
+    this.discardPolicy = policy;
+    this.filterNullColumnNames = filterNullColumnNames;
   }
 
   public FilterNullNode(
@@ -51,10 +57,8 @@ public class FilterNullNode extends ProcessNode {
       PlanNode child,
       FilterNullPolicy discardPolicy,
       List<String> filterNullColumnNames) {
-    super(id);
+    this(id, discardPolicy, filterNullColumnNames);
     this.child = child;
-    this.discardPolicy = discardPolicy;
-    this.filterNullColumnNames = filterNullColumnNames;
   }
 
   @Override
@@ -63,21 +67,33 @@ public class FilterNullNode extends ProcessNode {
   }
 
   @Override
-  public void addChildren(PlanNode child) {}
-
-  @Override
-  public PlanNode clone() {
-    return null;
+  public void addChild(PlanNode child) {
+    this.child = child;
   }
 
   @Override
-  public PlanNode cloneWithChildren(List<PlanNode> children) {
-    return null;
+  public PlanNode clone() {
+    return new FilterNullNode(getPlanNodeId(), discardPolicy, filterNullColumnNames);
+  }
+
+  @Override
+  public int allowedChildCount() {
+    return ONE_CHILD;
+  }
+
+  @Override
+  public List<ColumnHeader> getOutputColumnHeaders() {
+    return ((IOutputPlanNode) child).getOutputColumnHeaders();
   }
 
   @Override
   public List<String> getOutputColumnNames() {
-    return child.getOutputColumnNames();
+    return ((IOutputPlanNode) child).getOutputColumnNames();
+  }
+
+  @Override
+  public List<TSDataType> getOutputColumnTypes() {
+    return ((IOutputPlanNode) child).getOutputColumnTypes();
   }
 
   public FilterNullPolicy getDiscardPolicy() {
@@ -100,16 +116,33 @@ public class FilterNullNode extends ProcessNode {
   @Override
   public void serialize(ByteBuffer byteBuffer) {}
 
-  public void setFilterNullColumnNames(List<String> filterNullColumnNames) {
-    this.filterNullColumnNames = filterNullColumnNames;
-  }
-
   @TestOnly
   public Pair<String, List<String>> print() {
-    String title = String.format("[FilterNullNode (%s)]", this.getId());
+    String title = String.format("[FilterNullNode (%s)]", this.getPlanNodeId());
     List<String> attributes = new ArrayList<>();
     attributes.add("FilterNullPolicy: " + this.getDiscardPolicy());
     attributes.add("FilterNullColumnNames: " + this.getFilterNullColumnNames());
     return new Pair<>(title, attributes);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    FilterNullNode that = (FilterNullNode) o;
+    return discardPolicy == that.discardPolicy
+        && Objects.equals(child, that.child)
+        && Objects.equals(filterNullColumnNames, that.filterNullColumnNames);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(discardPolicy, child, filterNullColumnNames);
   }
 }
