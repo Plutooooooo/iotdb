@@ -544,6 +544,7 @@ public class Session {
     defaultSessionConnection.createAlignedTimeseries(request);
   }
 
+  //DeviceId
   private TSCreateAlignedTimeseriesReq getTSCreateAlignedTimeseriesReq(
       String prefixPath,
       List<String> measurements,
