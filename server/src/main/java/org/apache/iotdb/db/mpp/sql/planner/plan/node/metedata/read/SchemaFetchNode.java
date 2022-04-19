@@ -16,25 +16,36 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.iotdb.db.mpp.sql.planner.plan.node.metedata.read;
 
+import org.apache.iotdb.db.mpp.common.schematree.PathPatternTree;
 import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanNode;
 import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanNodeId;
 import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanNodeType;
-import org.apache.iotdb.tsfile.exception.NotImplementedException;
+import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanVisitor;
+
+import com.google.common.collect.ImmutableList;
 
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class ShowDevicesNode extends ShowNode {
+public class SchemaFetchNode extends SchemaScanNode {
 
-  public ShowDevicesNode(PlanNodeId id) {
+  private final PathPatternTree patternTree;
+
+  public SchemaFetchNode(PlanNodeId id, PathPatternTree patternTree) {
     super(id);
+    this.patternTree = patternTree;
+  }
+
+  public PathPatternTree getPatternTree() {
+    return patternTree;
   }
 
   @Override
   public List<PlanNode> getChildren() {
-    return null;
+    return ImmutableList.of();
   }
 
   @Override
@@ -42,26 +53,34 @@ public class ShowDevicesNode extends ShowNode {
 
   @Override
   public PlanNode clone() {
-    throw new NotImplementedException("Clone of ShowDevicesNode is not implemented");
+    return new SchemaFetchNode(getPlanNodeId(), patternTree);
   }
 
   @Override
   public int allowedChildCount() {
-    return NO_CHILD_ALLOWED;
+    return 0;
   }
 
   @Override
   protected void serializeAttributes(ByteBuffer byteBuffer) {
-    PlanNodeType.SHOW_DEVICES.serialize(byteBuffer);
+    PlanNodeType.SCHEMA_FETCH.serialize(byteBuffer);
+    patternTree.serialize(byteBuffer);
   }
 
-  public static ShowDevicesNode deserialize(ByteBuffer byteBuffer) {
-    PlanNodeId planNodeId = PlanNodeId.deserialize(byteBuffer);
-    return new ShowDevicesNode(planNodeId);
+  public static SchemaFetchNode deserialize(ByteBuffer byteBuffer) {
+    PathPatternTree patternTree = PathPatternTree.deserialize(byteBuffer);
+    PlanNodeId id = PlanNodeId.deserialize(byteBuffer);
+    return new SchemaFetchNode(id, patternTree);
   }
 
   @Override
-  public boolean equals(Object o) {
-    return super.equals(o);
+  public void open() throws Exception {}
+
+  @Override
+  public void close() throws Exception {}
+
+  @Override
+  public <R, C> R accept(PlanVisitor<R, C> visitor, C context) {
+    return visitor.visitSchemaFetch(this, context);
   }
 }

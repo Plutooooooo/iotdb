@@ -16,21 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.iotdb.db.mpp.sql.planner.plan.node.metedata.read;
+package org.apache.iotdb.db.mpp.buffer;
 
-import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanNode;
-import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanNodeId;
+import org.apache.iotdb.commons.exception.StartupException;
 
-import java.nio.ByteBuffer;
+public interface DataBlockServiceMBean {
 
-public abstract class ShowNode extends PlanNode {
+  String getRPCServiceStatus();
 
-  protected ShowNode(PlanNodeId id) {
-    super(id);
-  }
+  int getRPCPort();
 
-  @Override
-  public void serialize(ByteBuffer byteBuffer) {
-    super.serialize(byteBuffer);
-  }
+  void startService() throws StartupException;
+
+  void restartService() throws StartupException;
+
+  void stopService();
 }
