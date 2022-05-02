@@ -19,41 +19,24 @@
 package org.apache.iotdb.db.metadata.path;
 
 import org.apache.iotdb.commons.utils.TestOnly;
-import org.apache.iotdb.db.engine.memtable.IMemTable;
-import org.apache.iotdb.db.engine.modification.Modification;
-import org.apache.iotdb.db.engine.querycontext.QueryDataSource;
-import org.apache.iotdb.db.engine.querycontext.ReadOnlyMemChunk;
-import org.apache.iotdb.db.engine.storagegroup.TsFileResource;
 import org.apache.iotdb.db.exception.metadata.IllegalPathException;
 import org.apache.iotdb.db.exception.metadata.MetadataException;
-import org.apache.iotdb.db.exception.query.QueryProcessException;
 import org.apache.iotdb.db.metadata.utils.MetaUtils;
-import org.apache.iotdb.db.query.context.QueryContext;
-import org.apache.iotdb.db.query.executor.fill.LastPointReader;
-import org.apache.iotdb.db.query.filter.TsFileFilter;
-import org.apache.iotdb.db.query.reader.series.SeriesReader;
 import org.apache.iotdb.tsfile.common.constant.TsFileConstant;
-import org.apache.iotdb.tsfile.file.metadata.IChunkMetadata;
-import org.apache.iotdb.tsfile.file.metadata.ITimeSeriesMetadata;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.common.Path;
-import org.apache.iotdb.tsfile.read.filter.basic.Filter;
-import org.apache.iotdb.tsfile.utils.Pair;
 import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
 import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
-import org.apache.iotdb.tsfile.write.writer.RestorableTsFileIOWriter;
 
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -74,7 +57,7 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
 
   /**
    * Construct the PartialPath using a String, will split the given String into String[] E.g., path
-   * = "root.sg.\"d.1\".\"s.1\"" nodes = {"root", "sg", "\"d.1\"", "\"s.1\""}
+   * = "root.sg.`d.1`.`s.1`" nodes = {"root", "sg", "d.1", "s.1"}
    *
    * @param path a full String of a time series path
    * @throws IllegalPathException
@@ -327,9 +310,9 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
   @Override
   public String getFullPath() {
     if (fullPath == null) {
-      StringBuilder s = new StringBuilder(nodes[0]);
+      StringBuilder s = new StringBuilder(parseNodeString(nodes[0]));
       for (int i = 1; i < nodes.length; i++) {
-        s.append(TsFileConstant.PATH_SEPARATOR).append(nodes[i]);
+        s.append(TsFileConstant.PATH_SEPARATOR).append(parseNodeString(nodes[i]));
       }
       fullPath = s.toString();
     }
@@ -382,21 +365,35 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
   }
 
   @Override
-  public String getDevice() {
+  public String getDeviceIdString() {
     if (device != null) {
       return device;
     } else {
       if (nodes.length == 1) {
         return "";
       }
-      StringBuilder s = new StringBuilder(nodes[0]);
+      StringBuilder s = new StringBuilder(parseNodeString(nodes[0]));
       for (int i = 1; i < nodes.length - 1; i++) {
         s.append(TsFileConstant.PATH_SEPARATOR);
-        s.append(nodes[i]);
+        s.append(parseNodeString(nodes[i]));
       }
       device = s.toString();
       return device;
     }
+  }
+
+  /**
+   * wrap node that has . or ` in it with ``
+   *
+   * @param node
+   * @return
+   */
+  protected String parseNodeString(String node) {
+    node = node.replace("`", "``");
+    if (node.contains("`") || node.contains(".")) {
+      return "`" + node + "`";
+    }
+    return node;
   }
 
   // todo remove measurement related interface after invoker using MeasurementPath explicitly
@@ -451,7 +448,7 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
 
   @TestOnly
   public Path toTSFilePath() {
-    return new Path(getDevice(), getMeasurement());
+    return new Path(getDeviceIdString(), getMeasurement());
   }
 
   public static List<String> toStringList(List<PartialPath> pathList) {
@@ -484,95 +481,18 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
     return ret;
   }
 
-  public LastPointReader createLastPointReader(
-      TSDataType dataType,
-      Set<String> deviceMeasurements,
-      QueryContext context,
-      QueryDataSource dataSource,
-      long queryTime,
-      Filter timeFilter) {
-    throw new UnsupportedOperationException("Should call exact sub class!");
-  }
-
-  public SeriesReader createSeriesReader(
-      Set<String> allSensors,
-      TSDataType dataType,
-      QueryContext context,
-      QueryDataSource dataSource,
-      Filter timeFilter,
-      Filter valueFilter,
-      TsFileFilter fileFilter,
-      boolean ascending) {
-    throw new UnsupportedOperationException("Should call exact sub class!");
-  }
-
-  @TestOnly
-  public SeriesReader createSeriesReader(
-      Set<String> allSensors,
-      TSDataType dataType,
-      QueryContext context,
-      List<TsFileResource> seqFileResource,
-      List<TsFileResource> unseqFileResource,
-      Filter timeFilter,
-      Filter valueFilter,
-      boolean ascending) {
-    throw new UnsupportedOperationException("Should call exact sub class!");
-  }
-
-  public TsFileResource createTsFileResource(
-      List<ReadOnlyMemChunk> readOnlyMemChunk,
-      List<IChunkMetadata> chunkMetadataList,
-      TsFileResource originTsFileResource)
-      throws IOException {
-    throw new UnsupportedOperationException("Should call exact sub class!");
-  }
-
-  public ITimeSeriesMetadata generateTimeSeriesMetadata(
-      List<ReadOnlyMemChunk> readOnlyMemChunk, List<IChunkMetadata> chunkMetadataList)
-      throws IOException {
-    throw new UnsupportedOperationException("Should call exact sub class!");
-  }
-
-  /**
-   * get the ReadOnlyMemChunk from the given MemTable.
-   *
-   * @return ReadOnlyMemChunk
-   */
-  public ReadOnlyMemChunk getReadOnlyMemChunkFromMemTable(
-      IMemTable memTable, List<Pair<Modification, IMemTable>> modsToMemtable, long timeLowerBound)
-      throws QueryProcessException, IOException {
-    throw new UnsupportedOperationException("Should call exact sub class!");
-  }
-
-  /** get modifications from a memtable. */
-  protected List<Modification> getModificationsForMemtable(
-      IMemTable memTable, List<Pair<Modification, IMemTable>> modsToMemtable) {
-    List<Modification> modifications = new ArrayList<>();
-    boolean foundMemtable = false;
-    for (Pair<Modification, IMemTable> entry : modsToMemtable) {
-      if (foundMemtable || entry.right.equals(memTable)) {
-        modifications.add(entry.left);
-        foundMemtable = true;
-      }
-    }
-    return modifications;
-  }
-
   @Override
   public PartialPath clone() {
     return new PartialPath(this.getNodes().clone());
   }
 
-  public List<IChunkMetadata> getVisibleMetadataListFromWriter(
-      RestorableTsFileIOWriter writer, TsFileResource tsFileResource, QueryContext context) {
-    throw new UnsupportedOperationException("Should call exact sub class!");
-  }
-
+  @Override
   public void serialize(ByteBuffer byteBuffer) {
     PathType.Partial.serialize(byteBuffer);
     serializeWithoutType(byteBuffer);
   }
 
+  @Override
   protected void serializeWithoutType(ByteBuffer byteBuffer) {
     super.serializeWithoutType(byteBuffer);
     ReadWriteIOUtils.write(nodes.length, byteBuffer);
@@ -591,7 +511,7 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
     }
     partialPath.nodes = nodes;
     partialPath.setMeasurement(path.getMeasurement());
-    partialPath.device = path.getDevice();
+    partialPath.device = path.getDeviceIdString();
     partialPath.fullPath = path.getFullPath();
     return partialPath;
   }

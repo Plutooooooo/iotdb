@@ -59,8 +59,12 @@ import org.apache.iotdb.db.metadata.utils.MetaUtils;
 import org.apache.iotdb.db.qp.constant.SQLConstant;
 import org.apache.iotdb.db.qp.physical.BatchPlan;
 import org.apache.iotdb.db.qp.physical.PhysicalPlan;
-import org.apache.iotdb.db.qp.physical.crud.*;
 import org.apache.iotdb.db.qp.physical.crud.InsertMultiTabletsPlan;
+import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
+import org.apache.iotdb.db.qp.physical.crud.InsertRowPlan;
+import org.apache.iotdb.db.qp.physical.crud.InsertRowsOfOneDevicePlan;
+import org.apache.iotdb.db.qp.physical.crud.InsertRowsPlan;
+import org.apache.iotdb.db.qp.physical.crud.InsertTabletPlan;
 import org.apache.iotdb.db.qp.physical.sys.CreateAlignedTimeSeriesPlan;
 import org.apache.iotdb.db.qp.physical.sys.CreateMultiTimeSeriesPlan;
 import org.apache.iotdb.db.qp.physical.sys.CreateTimeSeriesPlan;
@@ -232,7 +236,9 @@ public class CSchemaProcessor extends LocalSchemaProcessor {
         if (measurementSchema instanceof VectorMeasurementSchema) {
           for (String subMeasurement : measurementSchema.getSubMeasurementsList()) {
             cacheMeta(
-                new AlignedPath(fullPath.getDevice(), subMeasurement), measurementMNode, false);
+                new AlignedPath(fullPath.getDeviceIdString(), subMeasurement),
+                measurementMNode,
+                false);
           }
         } else {
           cacheMeta(fullPath, measurementMNode, true);
@@ -283,43 +289,10 @@ public class CSchemaProcessor extends LocalSchemaProcessor {
   }
 
   /**
-   * the {@link org.apache.iotdb.db.wal.recover.file.UnsealedTsFileRecoverPerformer#redoLog} will
-   * call this to get schema after restart we should retry to get schema util we get the schema.
+   * Get the first index of non-exist schema in the local cache.
    *
-   * @param deviceId the device id.
-   * @param measurements the measurements.
+   * @return -1 if all schemas are found, or the first index of the non-exist schema
    */
-  @Override
-  public IMeasurementMNode[] getMeasurementMNodes(PartialPath deviceId, String[] measurements)
-      throws MetadataException {
-    try {
-      return super.getMeasurementMNodes(deviceId, measurements);
-    } catch (MetadataException e) {
-      // some measurements not exist in local
-      // try cache
-      IMeasurementMNode[] measurementMNodes = new IMeasurementMNode[measurements.length];
-      int failedMeasurementIndex = getMNodesLocally(deviceId, measurements, measurementMNodes);
-      if (failedMeasurementIndex == -1) {
-        return measurementMNodes;
-      }
-
-      // will retry util get schema
-      pullSeriesSchemas(deviceId, measurements);
-
-      // try again
-      failedMeasurementIndex = getMNodesLocally(deviceId, measurements, measurementMNodes);
-      if (failedMeasurementIndex != -1) {
-        throw new MetadataException(
-            deviceId.getFullPath()
-                + IoTDBConstant.PATH_SEPARATOR
-                + measurements[failedMeasurementIndex]
-                + " is not found");
-      }
-      return measurementMNodes;
-    }
-  }
-
-  /** @return -1 if all schemas are found, or the first index of the non-exist schema */
   private int getMNodesLocally(
       PartialPath deviceId, String[] measurements, IMeasurementMNode[] measurementMNodes) {
     int failedMeasurementIndex = -1;
@@ -409,7 +382,7 @@ public class CSchemaProcessor extends LocalSchemaProcessor {
         getMNodesLocally(plan.getDevicePath(), plan.getMeasurements(), measurementMNodes);
     if (nonExistSchemaIndex == -1) {
       plan.setMeasurementMNodes(measurementMNodes);
-      return new InternalMNode(null, plan.getDevicePath().getDevice());
+      return new InternalMNode(null, plan.getDevicePath().getDeviceIdString());
     }
     // auto-create schema in IoTDBConfig is always disabled in the cluster version, and we have
     // another config in ClusterConfig to do this

@@ -33,9 +33,9 @@ import org.apache.iotdb.db.metadata.idtable.IDTable;
 import org.apache.iotdb.db.metadata.idtable.entry.DeviceIDFactory;
 import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
 import org.apache.iotdb.db.metadata.path.PartialPath;
-import org.apache.iotdb.db.mpp.sql.planner.plan.node.write.InsertNode;
-import org.apache.iotdb.db.mpp.sql.planner.plan.node.write.InsertRowNode;
-import org.apache.iotdb.db.mpp.sql.planner.plan.node.write.InsertTabletNode;
+import org.apache.iotdb.db.mpp.plan.planner.plan.node.write.InsertNode;
+import org.apache.iotdb.db.mpp.plan.planner.plan.node.write.InsertRowNode;
+import org.apache.iotdb.db.mpp.plan.planner.plan.node.write.InsertTabletNode;
 import org.apache.iotdb.db.qp.physical.crud.DeletePlan;
 import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.qp.physical.crud.InsertRowPlan;
@@ -154,18 +154,13 @@ public class TsFilePlanRedoer {
         return;
       }
     }
-    // TODO(getMeasurementSchema)
-    //    plan.setMeasurementMNodes(new IMeasurementMNode[plan.getMeasurements().length]);
-    //    try {
-    //      if (IoTDBDescriptor.getInstance().getConfig().isEnableIDTable()) {
-    //        idTable.getSeriesSchemas(plan);
-    //      } else {
-    //        IoTDB.schemaProcessor.getSeriesSchemasAndReadLockDevice(plan);
-    //        plan.setDeviceID(DeviceIDFactory.getInstance().getDeviceID(plan.getDevicePath()));
-    //      }
-    //    } catch (IOException | MetadataException e) {
-    //      throw new QueryProcessException("can't replay insert logs, ", e);
-    //    }
+
+    if (IoTDBDescriptor.getInstance().getConfig().isEnableIDTable()) {
+      // TODO get device id by idTable
+      // idTable.getSeriesSchemas(node);
+    } else {
+      node.setDeviceID(DeviceIDFactory.getInstance().getDeviceID(node.getDevicePath()));
+    }
 
     if (node instanceof InsertRowNode) {
       if (node.isAligned()) {

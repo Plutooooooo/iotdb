@@ -19,6 +19,7 @@
 package org.apache.iotdb.db.engine;
 
 import org.apache.iotdb.common.rpc.thrift.TSStatus;
+import org.apache.iotdb.common.rpc.thrift.TTimePartitionSlot;
 import org.apache.iotdb.commons.concurrent.IoTDBThreadPoolFactory;
 import org.apache.iotdb.commons.concurrent.ThreadName;
 import org.apache.iotdb.commons.consensus.ConsensusGroupId;
@@ -45,8 +46,8 @@ import org.apache.iotdb.db.exception.WriteProcessException;
 import org.apache.iotdb.db.exception.WriteProcessRejectException;
 import org.apache.iotdb.db.exception.metadata.MetadataException;
 import org.apache.iotdb.db.exception.runtime.StorageEngineFailureException;
-import org.apache.iotdb.db.mpp.sql.planner.plan.node.write.InsertRowNode;
-import org.apache.iotdb.db.mpp.sql.planner.plan.node.write.InsertTabletNode;
+import org.apache.iotdb.db.mpp.plan.planner.plan.node.write.InsertRowNode;
+import org.apache.iotdb.db.mpp.plan.planner.plan.node.write.InsertTabletNode;
 import org.apache.iotdb.db.rescon.SystemInfo;
 import org.apache.iotdb.db.utils.ThreadUtils;
 import org.apache.iotdb.db.utils.UpgradeUtils;
@@ -194,6 +195,16 @@ public class StorageEngineV2 implements IService {
         Thread.currentThread().interrupt();
       }
     }
+  }
+
+  public static TTimePartitionSlot getTimePartitionSlot(long time) {
+    TTimePartitionSlot timePartitionSlot = new TTimePartitionSlot();
+    if (enablePartition) {
+      timePartitionSlot.setStartTime(time - time % timePartitionInterval);
+    } else {
+      timePartitionSlot.setStartTime(0);
+    }
+    return timePartitionSlot;
   }
 
   public boolean isAllSgReady() {

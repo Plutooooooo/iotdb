@@ -29,8 +29,8 @@ import org.apache.iotdb.db.engine.storagegroup.DataRegion;
 import org.apache.iotdb.db.exception.StorageEngineException;
 import org.apache.iotdb.db.exception.metadata.IllegalPathException;
 import org.apache.iotdb.db.metadata.path.PartialPath;
-import org.apache.iotdb.db.mpp.sql.planner.plan.node.write.InsertRowNode;
-import org.apache.iotdb.db.mpp.sql.planner.plan.node.write.InsertTabletNode;
+import org.apache.iotdb.db.mpp.plan.planner.plan.node.write.InsertRowNode;
+import org.apache.iotdb.db.mpp.plan.planner.plan.node.write.InsertTabletNode;
 import org.apache.iotdb.db.qp.physical.crud.DeletePlan;
 import org.apache.iotdb.db.qp.physical.crud.InsertRowPlan;
 import org.apache.iotdb.db.qp.physical.crud.InsertTabletPlan;
@@ -82,7 +82,7 @@ public class WALNode implements IWALNode {
    */
   private final AtomicLong totalCostOfFlushedMemTables = new AtomicLong();
   /** version id -> cost sum of memTables flushed at this file version */
-  private final Map<Integer, Long> walFileVersionId2MemTableCostSum = new ConcurrentHashMap<>();
+  private final Map<Integer, Long> walFileVersionId2MemTablesTotalCost = new ConcurrentHashMap<>();
 
   public WALNode(String identifier, String logDirectory) throws FileNotFoundException {
     this.identifier = identifier;
@@ -153,7 +153,7 @@ public class WALNode implements IWALNode {
     // update cost info
     long cost = config.isEnableMemControl() ? memTable.getTVListsRamCost() : 1;
     int currentWALFileVersion = buffer.getCurrentWALFileVersion();
-    walFileVersionId2MemTableCostSum.compute(
+    walFileVersionId2MemTablesTotalCost.compute(
         currentWALFileVersion, (k, v) -> v == null ? cost : v + cost);
     totalCostOfFlushedMemTables.addAndGet(cost);
   }
@@ -242,7 +242,7 @@ public class WALNode implements IWALNode {
           }
           // update totalRamCostOfFlushedMemTables
           int versionId = WALWriter.parseVersionId(file.getName());
-          Long memTableRamCostSum = walFileVersionId2MemTableCostSum.remove(versionId);
+          Long memTableRamCostSum = walFileVersionId2MemTablesTotalCost.remove(versionId);
           if (memTableRamCostSum != null) {
             totalCostOfFlushedMemTables.addAndGet(-memTableRamCostSum);
           }

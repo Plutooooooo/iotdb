@@ -496,6 +496,14 @@ public class IoTDBConfig {
   /** indicate whether current mode is mpp */
   private boolean mppMode = false;
 
+  /** indicate whether current mode is cluster */
+  private boolean isClusterMode = false;
+
+  /**
+   * the data node id for cluster mode, the default value -1 should be changed after join cluster
+   */
+  private int dataNodeId = -1;
+
   /** Replace implementation class of influxdb protocol service */
   private String influxdbImplClassName = InfluxDBServiceImpl.class.getName();
 
@@ -819,9 +827,6 @@ public class IoTDBConfig {
   /** the memory used for metadata cache when using persistent schema */
   private int cachedMNodeSizeInSchemaFileMode = -1;
 
-  /** the max num of thread used for flushing metadata to schema file */
-  private int maxSchemaFlushThreadNum = 15;
-
   /** the minimum size (in bytes) of segment inside a schema file page */
   private short minimumSegmentInSchemaFile = 0;
 
@@ -874,6 +879,30 @@ public class IoTDBConfig {
 
   /** Thread keep alive time in ms of data block manager. */
   private int dataBlockManagerKeepAliveTimeInMs = 1000;
+
+  /** Thrift socket and connection timeout between data node and config node. */
+  private int connectionTimeoutInMS = (int) TimeUnit.SECONDS.toMillis(20);
+
+  /**
+   * ClientManager will have so many selector threads (TAsyncClientManager) to distribute to its
+   * clients.
+   */
+  private int selectorNumOfClientManager =
+      Runtime.getRuntime().availableProcessors() / 4 > 0
+          ? Runtime.getRuntime().availableProcessors() / 4
+          : 1;
+
+  /**
+   * Cache size of dataNodeSchemaCache in{@link
+   * org.apache.iotdb.db.metadata.cache.DataNodeSchemaCache}.
+   */
+  private int dataNodeSchemaCacheSize = 10000;
+
+  /**
+   * Cache size of partition cache in {@link
+   * org.apache.iotdb.db.mpp.plan.analyze.ClusterPartitionFetcher}
+   */
+  private int partitionCacheSize = 10000;
 
   public float getUdfMemoryBudgetInMB() {
     return udfMemoryBudgetInMB;
@@ -2649,14 +2678,6 @@ public class IoTDBConfig {
     this.cachedMNodeSizeInSchemaFileMode = cachedMNodeSizeInSchemaFileMode;
   }
 
-  public int getMaxSchemaFlushThreadNum() {
-    return maxSchemaFlushThreadNum;
-  }
-
-  public void setMaxSchemaFlushThreadNum(int maxSchemaFlushThreadNum) {
-    this.maxSchemaFlushThreadNum = maxSchemaFlushThreadNum;
-  }
-
   public short getMinimumSegmentInSchemaFile() {
     return minimumSegmentInSchemaFile;
   }
@@ -2769,11 +2790,59 @@ public class IoTDBConfig {
     this.dataBlockManagerKeepAliveTimeInMs = dataBlockManagerKeepAliveTimeInMs;
   }
 
+  public int getConnectionTimeoutInMS() {
+    return connectionTimeoutInMS;
+  }
+
+  public void setConnectionTimeoutInMS(int connectionTimeoutInMS) {
+    this.connectionTimeoutInMS = connectionTimeoutInMS;
+  }
+
+  public int getSelectorNumOfClientManager() {
+    return selectorNumOfClientManager;
+  }
+
+  public void setSelectorNumOfClientManager(int selectorNumOfClientManager) {
+    this.selectorNumOfClientManager = selectorNumOfClientManager;
+  }
+
   public boolean isMppMode() {
     return mppMode;
   }
 
   public void setMppMode(boolean mppMode) {
     this.mppMode = mppMode;
+  }
+
+  public boolean isClusterMode() {
+    return isClusterMode;
+  }
+
+  public void setClusterMode(boolean isClusterMode) {
+    this.isClusterMode = isClusterMode;
+  }
+
+  public int getDataNodeId() {
+    return dataNodeId;
+  }
+
+  public void setDataNodeId(int dataNodeId) {
+    this.dataNodeId = dataNodeId;
+  }
+
+  public int getDataNodeSchemaCacheSize() {
+    return dataNodeSchemaCacheSize;
+  }
+
+  public void setDataNodeSchemaCacheSize(int dataNodeSchemaCacheSize) {
+    this.dataNodeSchemaCacheSize = dataNodeSchemaCacheSize;
+  }
+
+  public int getPartitionCacheSize() {
+    return partitionCacheSize;
+  }
+
+  public void setPartitionCacheSize(int partitionCacheSize) {
+    this.partitionCacheSize = partitionCacheSize;
   }
 }

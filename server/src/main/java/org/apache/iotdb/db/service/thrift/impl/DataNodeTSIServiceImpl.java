@@ -20,24 +20,28 @@ package org.apache.iotdb.db.service.thrift.impl;
 
 import org.apache.iotdb.common.rpc.thrift.TSStatus;
 import org.apache.iotdb.commons.conf.IoTDBConstant;
+import org.apache.iotdb.db.auth.authorizer.AuthorizerManager;
+import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.conf.OperationType;
 import org.apache.iotdb.db.mpp.common.QueryId;
 import org.apache.iotdb.db.mpp.common.header.DatasetHeader;
-import org.apache.iotdb.db.mpp.execution.Coordinator;
-import org.apache.iotdb.db.mpp.execution.ExecutionResult;
-import org.apache.iotdb.db.mpp.execution.IQueryExecution;
-import org.apache.iotdb.db.mpp.sql.analyze.ClusterPartitionFetcher;
-import org.apache.iotdb.db.mpp.sql.analyze.ClusterSchemaFetcher;
-import org.apache.iotdb.db.mpp.sql.analyze.IPartitionFetcher;
-import org.apache.iotdb.db.mpp.sql.analyze.ISchemaFetcher;
-import org.apache.iotdb.db.mpp.sql.parser.StatementGenerator;
-import org.apache.iotdb.db.mpp.sql.statement.Statement;
-import org.apache.iotdb.db.mpp.sql.statement.crud.InsertMultiTabletsStatement;
-import org.apache.iotdb.db.mpp.sql.statement.crud.InsertRowStatement;
-import org.apache.iotdb.db.mpp.sql.statement.crud.InsertRowsOfOneDeviceStatement;
-import org.apache.iotdb.db.mpp.sql.statement.crud.InsertRowsStatement;
-import org.apache.iotdb.db.mpp.sql.statement.crud.InsertTabletStatement;
+import org.apache.iotdb.db.mpp.plan.Coordinator;
+import org.apache.iotdb.db.mpp.plan.analyze.ClusterPartitionFetcher;
+import org.apache.iotdb.db.mpp.plan.analyze.ClusterSchemaFetcher;
+import org.apache.iotdb.db.mpp.plan.analyze.IPartitionFetcher;
+import org.apache.iotdb.db.mpp.plan.analyze.ISchemaFetcher;
+import org.apache.iotdb.db.mpp.plan.analyze.StandalonePartitionFetcher;
+import org.apache.iotdb.db.mpp.plan.analyze.StandaloneSchemaFetcher;
+import org.apache.iotdb.db.mpp.plan.execution.ExecutionResult;
+import org.apache.iotdb.db.mpp.plan.execution.IQueryExecution;
+import org.apache.iotdb.db.mpp.plan.parser.StatementGenerator;
+import org.apache.iotdb.db.mpp.plan.statement.Statement;
+import org.apache.iotdb.db.mpp.plan.statement.crud.InsertMultiTabletsStatement;
+import org.apache.iotdb.db.mpp.plan.statement.crud.InsertRowStatement;
+import org.apache.iotdb.db.mpp.plan.statement.crud.InsertRowsOfOneDeviceStatement;
+import org.apache.iotdb.db.mpp.plan.statement.crud.InsertRowsStatement;
+import org.apache.iotdb.db.mpp.plan.statement.crud.InsertTabletStatement;
 import org.apache.iotdb.db.query.control.SessionManager;
 import org.apache.iotdb.db.service.basic.BasicOpenSessionResp;
 import org.apache.iotdb.db.service.metrics.MetricsService;
@@ -46,7 +50,44 @@ import org.apache.iotdb.db.utils.QueryDataSetUtils;
 import org.apache.iotdb.metrics.utils.MetricLevel;
 import org.apache.iotdb.rpc.RpcUtils;
 import org.apache.iotdb.rpc.TSStatusCode;
-import org.apache.iotdb.service.rpc.thrift.*;
+import org.apache.iotdb.service.rpc.thrift.ServerProperties;
+import org.apache.iotdb.service.rpc.thrift.TSAppendSchemaTemplateReq;
+import org.apache.iotdb.service.rpc.thrift.TSCancelOperationReq;
+import org.apache.iotdb.service.rpc.thrift.TSCloseOperationReq;
+import org.apache.iotdb.service.rpc.thrift.TSCloseSessionReq;
+import org.apache.iotdb.service.rpc.thrift.TSCreateAlignedTimeseriesReq;
+import org.apache.iotdb.service.rpc.thrift.TSCreateMultiTimeseriesReq;
+import org.apache.iotdb.service.rpc.thrift.TSCreateSchemaTemplateReq;
+import org.apache.iotdb.service.rpc.thrift.TSCreateTimeseriesReq;
+import org.apache.iotdb.service.rpc.thrift.TSDeleteDataReq;
+import org.apache.iotdb.service.rpc.thrift.TSDropSchemaTemplateReq;
+import org.apache.iotdb.service.rpc.thrift.TSExecuteBatchStatementReq;
+import org.apache.iotdb.service.rpc.thrift.TSExecuteStatementReq;
+import org.apache.iotdb.service.rpc.thrift.TSExecuteStatementResp;
+import org.apache.iotdb.service.rpc.thrift.TSFetchMetadataReq;
+import org.apache.iotdb.service.rpc.thrift.TSFetchMetadataResp;
+import org.apache.iotdb.service.rpc.thrift.TSFetchResultsReq;
+import org.apache.iotdb.service.rpc.thrift.TSFetchResultsResp;
+import org.apache.iotdb.service.rpc.thrift.TSGetTimeZoneResp;
+import org.apache.iotdb.service.rpc.thrift.TSInsertRecordReq;
+import org.apache.iotdb.service.rpc.thrift.TSInsertRecordsOfOneDeviceReq;
+import org.apache.iotdb.service.rpc.thrift.TSInsertRecordsReq;
+import org.apache.iotdb.service.rpc.thrift.TSInsertStringRecordReq;
+import org.apache.iotdb.service.rpc.thrift.TSInsertStringRecordsOfOneDeviceReq;
+import org.apache.iotdb.service.rpc.thrift.TSInsertStringRecordsReq;
+import org.apache.iotdb.service.rpc.thrift.TSInsertTabletReq;
+import org.apache.iotdb.service.rpc.thrift.TSInsertTabletsReq;
+import org.apache.iotdb.service.rpc.thrift.TSLastDataQueryReq;
+import org.apache.iotdb.service.rpc.thrift.TSOpenSessionReq;
+import org.apache.iotdb.service.rpc.thrift.TSOpenSessionResp;
+import org.apache.iotdb.service.rpc.thrift.TSPruneSchemaTemplateReq;
+import org.apache.iotdb.service.rpc.thrift.TSQueryDataSet;
+import org.apache.iotdb.service.rpc.thrift.TSQueryTemplateReq;
+import org.apache.iotdb.service.rpc.thrift.TSQueryTemplateResp;
+import org.apache.iotdb.service.rpc.thrift.TSRawDataQueryReq;
+import org.apache.iotdb.service.rpc.thrift.TSSetSchemaTemplateReq;
+import org.apache.iotdb.service.rpc.thrift.TSSetTimeZoneReq;
+import org.apache.iotdb.service.rpc.thrift.TSUnsetSchemaTemplateReq;
 
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
@@ -70,20 +111,33 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DataNodeTSIServiceImpl.class);
 
+  private static final IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
+
   private static final Coordinator COORDINATOR = Coordinator.getInstance();
 
   private static final SessionManager SESSION_MANAGER = SessionManager.getInstance();
 
-  private static final IPartitionFetcher PARTITION_FETCHER = ClusterPartitionFetcher.getInstance();
+  private final IPartitionFetcher PARTITION_FETCHER;
 
-  private static final ISchemaFetcher SCHEMA_FETCHER = ClusterSchemaFetcher.getInstance();
+  private final ISchemaFetcher SCHEMA_FETCHER;
+
+  public DataNodeTSIServiceImpl() {
+    if (config.isClusterMode()) {
+      PARTITION_FETCHER = ClusterPartitionFetcher.getInstance();
+      SCHEMA_FETCHER = ClusterSchemaFetcher.getInstance();
+    } else {
+      PARTITION_FETCHER = StandalonePartitionFetcher.getInstance();
+      SCHEMA_FETCHER = StandaloneSchemaFetcher.getInstance();
+    }
+  }
 
   @Override
   public TSOpenSessionResp openSession(TSOpenSessionReq req) throws TException {
     IoTDBConstant.ClientVersion clientVersion = parseClientVersion(req);
     BasicOpenSessionResp openSessionResp =
-        SESSION_MANAGER.openSession(
-            req.username, req.password, req.zoneId, req.client_protocol, clientVersion);
+        AuthorizerManager.getInstance()
+            .openSession(
+                req.username, req.password, req.zoneId, req.client_protocol, clientVersion);
     TSStatus tsStatus = RpcUtils.getStatus(openSessionResp.getCode(), openSessionResp.getMessage());
     TSOpenSessionResp resp = new TSOpenSessionResp(tsStatus, CURRENT_RPC_VERSION);
     return resp.setSessionId(openSessionResp.getSessionId());
@@ -216,6 +270,12 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
         StatementGenerator.createStatement(
             statement, SESSION_MANAGER.getZoneId(req.getSessionId()));
 
+    // permission check
+    TSStatus status = AuthorizerManager.getInstance().checkAuthority(s, req.sessionId);
+    if (status.getCode() != TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+      return RpcUtils.getTSExecuteStatementResp(status);
+    }
+
     QUERY_FREQUENCY_RECORDER.incrementAndGet();
     AUDIT_LOGGER.debug("Session {} execute Query: {}", req.sessionId, statement);
 
@@ -233,7 +293,7 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
               SCHEMA_FETCHER);
 
       if (result.status.code != TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
-        throw new RuntimeException("error coed: " + result.status);
+        throw new RuntimeException("error code: " + result.status);
       }
 
       IQueryExecution queryExecution = COORDINATOR.getQueryExecution(id);
@@ -323,6 +383,12 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
       // Step 1: TODO(INSERT) transfer from TSInsertTabletsReq to Statement
       InsertRowsStatement statement = (InsertRowsStatement) StatementGenerator.createStatement(req);
 
+      // permission check
+      TSStatus status = AuthorizerManager.getInstance().checkAuthority(statement, req.sessionId);
+      if (status.getCode() != TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+        return status;
+      }
+
       // Step 2: call the coordinator
       long queryId = SESSION_MANAGER.requestQueryId(false);
       ExecutionResult result =
@@ -334,9 +400,6 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
               PARTITION_FETCHER,
               SCHEMA_FETCHER);
 
-      // TODO(INSERT) do this check in analyze
-      //      TSStatus status = serviceProvider.checkAuthority(insertTabletPlan,
-      // req.getSessionId());
       return result.status;
     } catch (Exception e) {
       return onNPEOrUnexpectedException(
@@ -366,6 +429,12 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
       InsertRowsOfOneDeviceStatement statement =
           (InsertRowsOfOneDeviceStatement) StatementGenerator.createStatement(req);
 
+      // permission check
+      TSStatus status = AuthorizerManager.getInstance().checkAuthority(statement, req.sessionId);
+      if (status.getCode() != TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+        return status;
+      }
+
       // Step 2: call the coordinator
       long queryId = SESSION_MANAGER.requestQueryId(false);
       ExecutionResult result =
@@ -377,9 +446,6 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
               PARTITION_FETCHER,
               SCHEMA_FETCHER);
 
-      // TODO(INSERT) do this check in analyze
-      //      TSStatus status = serviceProvider.checkAuthority(insertTabletPlan,
-      // req.getSessionId());
       return result.status;
     } catch (Exception e) {
       return onNPEOrUnexpectedException(
@@ -409,6 +475,12 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
       InsertRowsOfOneDeviceStatement statement =
           (InsertRowsOfOneDeviceStatement) StatementGenerator.createStatement(req);
 
+      // permission check
+      TSStatus status = AuthorizerManager.getInstance().checkAuthority(statement, req.sessionId);
+      if (status.getCode() != TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+        return status;
+      }
+
       // Step 2: call the coordinator
       long queryId = SESSION_MANAGER.requestQueryId(false);
       ExecutionResult result =
@@ -420,9 +492,6 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
               PARTITION_FETCHER,
               SCHEMA_FETCHER);
 
-      // TODO(INSERT) do this check in analyze
-      //      TSStatus status = serviceProvider.checkAuthority(insertTabletPlan,
-      // req.getSessionId());
       return result.status;
     } catch (Exception e) {
       return onNPEOrUnexpectedException(
@@ -448,6 +517,12 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
 
       InsertRowStatement statement = (InsertRowStatement) StatementGenerator.createStatement(req);
 
+      // permission check
+      TSStatus status = AuthorizerManager.getInstance().checkAuthority(statement, req.sessionId);
+      if (status.getCode() != TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+        return status;
+      }
+
       // Step 2: call the coordinator
       long queryId = SESSION_MANAGER.requestQueryId(false);
       ExecutionResult result =
@@ -459,9 +534,6 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
               PARTITION_FETCHER,
               SCHEMA_FETCHER);
 
-      // TODO(INSERT) do this check in analyze
-      //      TSStatus status = SESSION_MANAGER.checkAuthority(insertTabletPlan,
-      // req.getSessionId());
       return result.status;
     } catch (Exception e) {
       return onNPEOrUnexpectedException(
@@ -482,6 +554,13 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
       // Step 1: TODO(INSERT) transfer from TSInsertTabletsReq to Statement
       InsertMultiTabletsStatement statement =
           (InsertMultiTabletsStatement) StatementGenerator.createStatement(req);
+
+      // permission check
+      TSStatus status = AuthorizerManager.getInstance().checkAuthority(statement, req.sessionId);
+      if (status.getCode() != TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+        return status;
+      }
+
       // Step 2: call the coordinator
       long queryId = SESSION_MANAGER.requestQueryId(false);
       ExecutionResult result =
@@ -493,9 +572,6 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
               PARTITION_FETCHER,
               SCHEMA_FETCHER);
 
-      // TODO(INSERT) do this check in analyze
-      //      TSStatus status = serviceProvider.checkAuthority(insertTabletPlan,
-      // req.getSessionId());
       return result.status;
     } catch (Exception e) {
       return onNPEOrUnexpectedException(
@@ -517,6 +593,12 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
       InsertTabletStatement statement =
           (InsertTabletStatement) StatementGenerator.createStatement(req);
 
+      // permission check
+      TSStatus status = AuthorizerManager.getInstance().checkAuthority(statement, req.sessionId);
+      if (status.getCode() != TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+        return status;
+      }
+
       // Step 2: call the coordinator
       long queryId = SESSION_MANAGER.requestQueryId(false);
       ExecutionResult result =
@@ -528,9 +610,6 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
               PARTITION_FETCHER,
               SCHEMA_FETCHER);
 
-      // TODO(INSERT) do this check in analyze
-      //      TSStatus status = SESSION_MANAGER.checkAuthority(insertTabletPlan,
-      // req.getSessionId());
       return result.status;
     } catch (Exception e) {
       return onNPEOrUnexpectedException(
@@ -558,19 +637,22 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
 
       InsertRowsStatement statement = (InsertRowsStatement) StatementGenerator.createStatement(req);
 
+      // permission check
+      TSStatus status = AuthorizerManager.getInstance().checkAuthority(statement, req.sessionId);
+      if (status.getCode() != TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+        return status;
+      }
+
       long queryId = SESSION_MANAGER.requestQueryId(false);
       ExecutionResult result =
           COORDINATOR.execute(
               statement,
-              new QueryId(String.valueOf(queryId)),
+              genQueryId(queryId),
               SESSION_MANAGER.getSessionInfo(req.sessionId),
               "",
               PARTITION_FETCHER,
               SCHEMA_FETCHER);
 
-      // TODO(INSERT) do this check in analyze
-      //      TSStatus status = serviceProvider.checkAuthority(insertTabletPlan,
-      // req.getSessionId());
       return result.status;
     } catch (Exception e) {
       return onNPEOrUnexpectedException(
@@ -693,6 +775,12 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
 
       InsertRowStatement statement = (InsertRowStatement) StatementGenerator.createStatement(req);
 
+      // permission check
+      TSStatus status = AuthorizerManager.getInstance().checkAuthority(statement, req.sessionId);
+      if (status.getCode() != TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+        return status;
+      }
+
       // Step 2: call the coordinator
       long queryId = SESSION_MANAGER.requestQueryId(false);
       ExecutionResult result =
@@ -704,9 +792,6 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
               PARTITION_FETCHER,
               SCHEMA_FETCHER);
 
-      // TODO(INSERT) do this check in analyze
-      //      TSStatus status = serviceProvider.checkAuthority(insertTabletPlan,
-      // req.getSessionId());
       return result.status;
     } catch (Exception e) {
       return onNPEOrUnexpectedException(
@@ -756,8 +841,20 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
   public void handleClientExit() {
     Long sessionId = SESSION_MANAGER.getCurrSessionId();
     if (sessionId != null) {
+      SESSION_MANAGER.releaseSessionResource(sessionId, this::cleanupQueryExecution);
       TSCloseSessionReq req = new TSCloseSessionReq(sessionId);
       closeSession(req);
     }
+  }
+
+  private void cleanupQueryExecution(Long queryId) {
+    IQueryExecution queryExecution = COORDINATOR.getQueryExecution(genQueryId(queryId));
+    if (queryExecution != null) {
+      queryExecution.stopAndCleanup();
+    }
+  }
+
+  private QueryId genQueryId(long id) {
+    return new QueryId(String.valueOf(id));
   }
 }
