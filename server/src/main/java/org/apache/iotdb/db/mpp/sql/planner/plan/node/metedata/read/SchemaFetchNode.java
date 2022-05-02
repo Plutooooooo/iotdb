@@ -44,21 +44,13 @@ public class SchemaFetchNode extends SchemaScanNode {
   }
 
   @Override
-  public List<PlanNode> getChildren() {
-    return ImmutableList.of();
-  }
-
-  @Override
-  public void addChild(PlanNode child) {}
-
-  @Override
   public PlanNode clone() {
     return new SchemaFetchNode(getPlanNodeId(), patternTree);
   }
 
   @Override
-  public int allowedChildCount() {
-    return 0;
+  public List<String> getOutputColumnNames() {
+    return ImmutableList.of();
   }
 
   @Override

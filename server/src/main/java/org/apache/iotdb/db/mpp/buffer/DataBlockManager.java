@@ -19,7 +19,9 @@
 
 package org.apache.iotdb.db.mpp.buffer;
 
-import org.apache.iotdb.commons.cluster.Endpoint;
+import org.apache.iotdb.common.rpc.thrift.TEndPoint;
+import org.apache.iotdb.commons.client.IClientManager;
+import org.apache.iotdb.commons.client.sync.SyncDataNodeDataBlockServiceClient;
 import org.apache.iotdb.db.mpp.execution.FragmentInstanceContext;
 import org.apache.iotdb.db.mpp.memory.LocalMemoryManager;
 import org.apache.iotdb.mpp.rpc.thrift.DataBlockService;
@@ -50,17 +52,21 @@ public class DataBlockManager implements IDataBlockManager {
   private static final Logger logger = LoggerFactory.getLogger(DataBlockManager.class);
 
   public interface SourceHandleListener {
-    void onFinished(SourceHandle sourceHandle);
+    void onFinished(ISourceHandle sourceHandle);
 
-    void onClosed(SourceHandle sourceHandle);
+    void onAborted(ISourceHandle sourceHandle);
+
+    void onFailure(ISourceHandle sourceHandle, Throwable t);
   }
 
   public interface SinkHandleListener {
-    void onFinish(SinkHandle sinkHandle);
+    void onFinish(ISinkHandle sinkHandle);
 
-    void onClosed(SinkHandle sinkHandle);
+    void onEndOfBlocks(ISinkHandle sinkHandle);
 
-    void onAborted(SinkHandle sinkHandle);
+    void onAborted(ISinkHandle sinkHandle);
+
+    void onFailure(ISinkHandle sinkHandle, Throwable t);
   }
 
   /** Handle thrift communications. */
@@ -80,7 +86,7 @@ public class DataBlockManager implements IDataBlockManager {
                 + ".");
       }
       TGetDataBlockResponse resp = new TGetDataBlockResponse();
-      SinkHandle sinkHandle = sinkHandles.get(req.getSourceFragmentInstanceId());
+      SinkHandle sinkHandle = (SinkHandle) sinkHandles.get(req.getSourceFragmentInstanceId());
       for (int i = req.getStartSequenceId(); i < req.getEndSequenceId(); i++) {
         try {
           ByteBuffer serializedTsBlock = sinkHandle.getSerializedTsBlock(i);
@@ -105,8 +111,7 @@ public class DataBlockManager implements IDataBlockManager {
                 + e.getSourceFragmentInstanceId()
                 + ".");
       }
-      sinkHandles
-          .get(e.getSourceFragmentInstanceId())
+      ((SinkHandle) sinkHandles.get(e.getSourceFragmentInstanceId()))
           .acknowledgeTsBlock(e.getStartSequenceId(), e.getEndSequenceId());
     }
 
@@ -124,7 +129,7 @@ public class DataBlockManager implements IDataBlockManager {
           || sourceHandles
               .get(e.getTargetFragmentInstanceId())
               .get(e.getTargetPlanNodeId())
-              .isClosed()) {
+              .isAborted()) {
         throw new TException(
             "Target fragment instance not found. Fragment instance ID: "
                 + e.getTargetFragmentInstanceId()
@@ -132,7 +137,8 @@ public class DataBlockManager implements IDataBlockManager {
       }
 
       SourceHandle sourceHandle =
-          sourceHandles.get(e.getTargetFragmentInstanceId()).get(e.getTargetPlanNodeId());
+          (SourceHandle)
+              sourceHandles.get(e.getTargetFragmentInstanceId()).get(e.getTargetPlanNodeId());
       sourceHandle.updatePendingDataBlockInfo(e.getStartSequenceId(), e.getBlockSizes());
     }
 
@@ -150,24 +156,32 @@ public class DataBlockManager implements IDataBlockManager {
           || sourceHandles
               .get(e.getTargetFragmentInstanceId())
               .get(e.getTargetPlanNodeId())
-              .isClosed()) {
+              .isAborted()) {
         throw new TException(
             "Target fragment instance not found. Fragment instance ID: "
                 + e.getTargetFragmentInstanceId()
                 + ".");
       }
       SourceHandle sourceHandle =
-          sourceHandles
-              .getOrDefault(e.getTargetFragmentInstanceId(), Collections.emptyMap())
-              .get(e.getTargetPlanNodeId());
+          (SourceHandle)
+              sourceHandles
+                  .getOrDefault(e.getTargetFragmentInstanceId(), Collections.emptyMap())
+                  .get(e.getTargetPlanNodeId());
       sourceHandle.setNoMoreTsBlocks(e.getLastSequenceId());
     }
   }
 
   /** Listen to the state changes of a source handle. */
   class SourceHandleListenerImpl implements SourceHandleListener {
+
+    private final IDataBlockManagerCallback<Throwable> onFailureCallback;
+
+    public SourceHandleListenerImpl(IDataBlockManagerCallback<Throwable> onFailureCallback) {
+      this.onFailureCallback = onFailureCallback;
+    }
+
     @Override
-    public void onFinished(SourceHandle sourceHandle) {
+    public void onFinished(ISourceHandle sourceHandle) {
       logger.info("Release resources of finished source handle {}", sourceHandle);
       if (!sourceHandles.containsKey(sourceHandle.getLocalFragmentInstanceId())
           || !sourceHandles
@@ -175,18 +189,28 @@ public class DataBlockManager implements IDataBlockManager {
               .containsKey(sourceHandle.getLocalPlanNodeId())) {
         logger.info(
             "Resources of finished source handle {} has already been released", sourceHandle);
+      } else {
+        sourceHandles
+            .get(sourceHandle.getLocalFragmentInstanceId())
+            .remove(sourceHandle.getLocalPlanNodeId());
       }
-      sourceHandles
-          .get(sourceHandle.getLocalFragmentInstanceId())
-          .remove(sourceHandle.getLocalPlanNodeId());
-      if (sourceHandles.get(sourceHandle.getLocalFragmentInstanceId()).isEmpty()) {
+      if (sourceHandles.containsKey(sourceHandle.getLocalFragmentInstanceId())
+          && sourceHandles.get(sourceHandle.getLocalFragmentInstanceId()).isEmpty()) {
         sourceHandles.remove(sourceHandle.getLocalFragmentInstanceId());
       }
     }
 
     @Override
-    public void onClosed(SourceHandle sourceHandle) {
+    public void onAborted(ISourceHandle sourceHandle) {
       onFinished(sourceHandle);
+    }
+
+    @Override
+    public void onFailure(ISourceHandle sourceHandle, Throwable t) {
+      logger.error("Source handle {} failed due to {}", sourceHandle, t);
+      if (onFailureCallback != null) {
+        onFailureCallback.call(t);
+      }
     }
   }
 
@@ -194,42 +218,54 @@ public class DataBlockManager implements IDataBlockManager {
   class SinkHandleListenerImpl implements SinkHandleListener {
 
     private final FragmentInstanceContext context;
+    private final IDataBlockManagerCallback<Throwable> onFailureCallback;
 
-    public SinkHandleListenerImpl(FragmentInstanceContext context) {
+    public SinkHandleListenerImpl(
+        FragmentInstanceContext context, IDataBlockManagerCallback<Throwable> onFailureCallback) {
       this.context = context;
+      this.onFailureCallback = onFailureCallback;
     }
 
     @Override
-    public void onFinish(SinkHandle sinkHandle) {
+    public void onFinish(ISinkHandle sinkHandle) {
       logger.info("Release resources of finished sink handle {}", sourceHandles);
       if (!sinkHandles.containsKey(sinkHandle.getLocalFragmentInstanceId())) {
         logger.info("Resources of finished sink handle {} has already been released", sinkHandle);
       }
       sinkHandles.remove(sinkHandle.getLocalFragmentInstanceId());
-      context.finish();
+      context.finished();
     }
 
     @Override
-    public void onClosed(SinkHandle sinkHandle) {
-      context.flushing();
+    public void onEndOfBlocks(ISinkHandle sinkHandle) {
+      context.transitionToFlushing();
     }
 
     @Override
-    public void onAborted(SinkHandle sinkHandle) {
+    public void onAborted(ISinkHandle sinkHandle) {
       logger.info("Release resources of aborted sink handle {}", sourceHandles);
       if (!sinkHandles.containsKey(sinkHandle.getLocalFragmentInstanceId())) {
         logger.info("Resources of aborted sink handle {} has already been released", sinkHandle);
       }
       sinkHandles.remove(sinkHandle.getLocalFragmentInstanceId());
     }
+
+    @Override
+    public void onFailure(ISinkHandle sinkHandle, Throwable t) {
+      logger.error("Sink handle {} failed due to {}", sinkHandle, t);
+      if (onFailureCallback != null) {
+        onFailureCallback.call(t);
+      }
+    }
   }
 
   private final LocalMemoryManager localMemoryManager;
   private final Supplier<TsBlockSerde> tsBlockSerdeFactory;
   private final ExecutorService executorService;
-  private final DataBlockServiceClientFactory clientFactory;
-  private final Map<TFragmentInstanceId, Map<String, SourceHandle>> sourceHandles;
-  private final Map<TFragmentInstanceId, SinkHandle> sinkHandles;
+  private final IClientManager<TEndPoint, SyncDataNodeDataBlockServiceClient>
+      dataBlockServiceClientManager;
+  private final Map<TFragmentInstanceId, Map<String, ISourceHandle>> sourceHandles;
+  private final Map<TFragmentInstanceId, ISinkHandle> sinkHandles;
 
   private DataBlockServiceImpl dataBlockService;
 
@@ -237,11 +273,11 @@ public class DataBlockManager implements IDataBlockManager {
       LocalMemoryManager localMemoryManager,
       Supplier<TsBlockSerde> tsBlockSerdeFactory,
       ExecutorService executorService,
-      DataBlockServiceClientFactory clientFactory) {
+      IClientManager<TEndPoint, SyncDataNodeDataBlockServiceClient> dataBlockServiceClientManager) {
     this.localMemoryManager = Validate.notNull(localMemoryManager);
     this.tsBlockSerdeFactory = Validate.notNull(tsBlockSerdeFactory);
     this.executorService = Validate.notNull(executorService);
-    this.clientFactory = Validate.notNull(clientFactory);
+    this.dataBlockServiceClientManager = Validate.notNull(dataBlockServiceClientManager);
     sourceHandles = new ConcurrentHashMap<>();
     sinkHandles = new ConcurrentHashMap<>();
   }
@@ -254,17 +290,59 @@ public class DataBlockManager implements IDataBlockManager {
   }
 
   @Override
-  public ISinkHandle createSinkHandle(
+  public synchronized ISinkHandle createLocalSinkHandle(
       TFragmentInstanceId localFragmentInstanceId,
-      Endpoint endpoint,
       TFragmentInstanceId remoteFragmentInstanceId,
       String remotePlanNodeId,
+      // TODO: replace with callbacks to decouple DataBlockManager from FragmentInstanceContext
+      FragmentInstanceContext instanceContext) {
+    if (sinkHandles.containsKey(localFragmentInstanceId)) {
+      throw new IllegalStateException(
+          "Local sink handle for " + localFragmentInstanceId + " exists.");
+    }
+
+    logger.debug(
+        "Create local sink handle to plan node {} of {} for {}",
+        remotePlanNodeId,
+        remoteFragmentInstanceId,
+        localFragmentInstanceId);
+
+    SharedTsBlockQueue queue;
+    if (sourceHandles.containsKey(remoteFragmentInstanceId)
+        && sourceHandles.get(remoteFragmentInstanceId).containsKey(remotePlanNodeId)) {
+      logger.debug("Get shared tsblock queue from local source handle");
+      queue =
+          ((LocalSourceHandle) sourceHandles.get(remoteFragmentInstanceId).get(remotePlanNodeId))
+              .getSharedTsBlockQueue();
+    } else {
+      logger.debug("Create shared tsblock queue");
+      queue = new SharedTsBlockQueue(remoteFragmentInstanceId, localMemoryManager);
+    }
+
+    LocalSinkHandle localSinkHandle =
+        new LocalSinkHandle(
+            remoteFragmentInstanceId,
+            remotePlanNodeId,
+            localFragmentInstanceId,
+            queue,
+            new SinkHandleListenerImpl(instanceContext, instanceContext::failed));
+    sinkHandles.put(localFragmentInstanceId, localSinkHandle);
+    return localSinkHandle;
+  }
+
+  @Override
+  public ISinkHandle createSinkHandle(
+      TFragmentInstanceId localFragmentInstanceId,
+      TEndPoint remoteEndpoint,
+      TFragmentInstanceId remoteFragmentInstanceId,
+      String remotePlanNodeId,
+      // TODO: replace with callbacks to decouple DataBlockManager from FragmentInstanceContext
       FragmentInstanceContext instanceContext) {
     if (sinkHandles.containsKey(localFragmentInstanceId)) {
       throw new IllegalStateException("Sink handle for " + localFragmentInstanceId + " exists.");
     }
 
-    logger.info(
+    logger.debug(
         "Create sink handle to plan node {} of {} for {}",
         remotePlanNodeId,
         remoteFragmentInstanceId,
@@ -272,25 +350,25 @@ public class DataBlockManager implements IDataBlockManager {
 
     SinkHandle sinkHandle =
         new SinkHandle(
-            endpoint.toString(),
+            remoteEndpoint,
             remoteFragmentInstanceId,
             remotePlanNodeId,
             localFragmentInstanceId,
             localMemoryManager,
             executorService,
-            clientFactory.getDataBlockServiceClient(endpoint),
             tsBlockSerdeFactory.get(),
-            new SinkHandleListenerImpl(instanceContext));
+            new SinkHandleListenerImpl(instanceContext, instanceContext::failed),
+            dataBlockServiceClientManager);
     sinkHandles.put(localFragmentInstanceId, sinkHandle);
     return sinkHandle;
   }
 
   @Override
-  public ISourceHandle createSourceHandle(
+  public synchronized ISourceHandle createLocalSourceHandle(
       TFragmentInstanceId localFragmentInstanceId,
       String localPlanNodeId,
-      Endpoint endpoint,
-      TFragmentInstanceId remoteFragmentInstanceId) {
+      TFragmentInstanceId remoteFragmentInstanceId,
+      IDataBlockManagerCallback<Throwable> onFailureCallback) {
     if (sourceHandles.containsKey(localFragmentInstanceId)
         && sourceHandles.get(localFragmentInstanceId).containsKey(localPlanNodeId)) {
       throw new IllegalStateException(
@@ -301,7 +379,50 @@ public class DataBlockManager implements IDataBlockManager {
               + " exists.");
     }
 
-    logger.info(
+    logger.debug(
+        "Create local source handle from {} for plan node {} of {}",
+        remoteFragmentInstanceId,
+        localPlanNodeId,
+        localFragmentInstanceId);
+    SharedTsBlockQueue queue;
+    if (sinkHandles.containsKey(remoteFragmentInstanceId)) {
+      logger.debug("Get shared tsblock queue from local sink handle");
+      queue = ((LocalSinkHandle) sinkHandles.get(remoteFragmentInstanceId)).getSharedTsBlockQueue();
+    } else {
+      logger.debug("Create shared tsblock queue");
+      queue = new SharedTsBlockQueue(localFragmentInstanceId, localMemoryManager);
+    }
+    LocalSourceHandle localSourceHandle =
+        new LocalSourceHandle(
+            remoteFragmentInstanceId,
+            localFragmentInstanceId,
+            localPlanNodeId,
+            queue,
+            new SourceHandleListenerImpl(onFailureCallback));
+    sourceHandles
+        .computeIfAbsent(localFragmentInstanceId, key -> new ConcurrentHashMap<>())
+        .put(localPlanNodeId, localSourceHandle);
+    return localSourceHandle;
+  }
+
+  @Override
+  public ISourceHandle createSourceHandle(
+      TFragmentInstanceId localFragmentInstanceId,
+      String localPlanNodeId,
+      TEndPoint remoteEndpoint,
+      TFragmentInstanceId remoteFragmentInstanceId,
+      IDataBlockManagerCallback<Throwable> onFailureCallback) {
+    if (sourceHandles.containsKey(localFragmentInstanceId)
+        && sourceHandles.get(localFragmentInstanceId).containsKey(localPlanNodeId)) {
+      throw new IllegalStateException(
+          "Source handle for plan node "
+              + localPlanNodeId
+              + " of "
+              + localFragmentInstanceId
+              + " exists.");
+    }
+
+    logger.debug(
         "Create source handle from {} for plan node {} of {}",
         remoteFragmentInstanceId,
         localPlanNodeId,
@@ -309,15 +430,15 @@ public class DataBlockManager implements IDataBlockManager {
 
     SourceHandle sourceHandle =
         new SourceHandle(
-            endpoint.getIp(),
+            remoteEndpoint,
             remoteFragmentInstanceId,
             localFragmentInstanceId,
             localPlanNodeId,
             localMemoryManager,
             executorService,
-            clientFactory.getDataBlockServiceClient(endpoint),
             tsBlockSerdeFactory.get(),
-            new SourceHandleListenerImpl());
+            new SourceHandleListenerImpl(onFailureCallback),
+            dataBlockServiceClientManager);
     sourceHandles
         .computeIfAbsent(localFragmentInstanceId, key -> new ConcurrentHashMap<>())
         .put(localPlanNodeId, sourceHandle);
@@ -339,10 +460,10 @@ public class DataBlockManager implements IDataBlockManager {
       sinkHandles.remove(fragmentInstanceId);
     }
     if (sourceHandles.containsKey(fragmentInstanceId)) {
-      Map<String, SourceHandle> planNodeIdToSourceHandle = sourceHandles.get(fragmentInstanceId);
-      for (Entry<String, SourceHandle> entry : planNodeIdToSourceHandle.entrySet()) {
+      Map<String, ISourceHandle> planNodeIdToSourceHandle = sourceHandles.get(fragmentInstanceId);
+      for (Entry<String, ISourceHandle> entry : planNodeIdToSourceHandle.entrySet()) {
         logger.info("Close source handle {}", sourceHandles);
-        entry.getValue().close();
+        entry.getValue().abort();
       }
       sourceHandles.remove(fragmentInstanceId);
     }
