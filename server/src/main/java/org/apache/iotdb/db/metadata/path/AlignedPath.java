@@ -192,7 +192,7 @@ public class AlignedPath extends PartialPath {
     AlignedPath result = new AlignedPath();
     result.nodes = nodes;
     result.fullPath = fullPath;
-    result.device = device;
+    result.deviceIdString = deviceIdString;
     result.measurementList = new ArrayList<>(measurementList);
     result.schemaList = new ArrayList<>(schemaList);
     return result;
@@ -286,7 +286,7 @@ public class AlignedPath extends PartialPath {
     alignedPath.measurementList = measurements;
     alignedPath.schemaList = measurementSchemas;
     alignedPath.nodes = partialPath.nodes;
-    alignedPath.device = partialPath.getDeviceIdString();
+    alignedPath.deviceIdString = partialPath.getDeviceIdString();
     alignedPath.fullPath = partialPath.getFullPath();
     return alignedPath;
   }

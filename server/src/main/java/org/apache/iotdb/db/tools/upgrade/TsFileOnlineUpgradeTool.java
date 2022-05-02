@@ -183,7 +183,7 @@ public class TsFileOnlineUpgradeTool extends TsFileRewriteTool {
               skipReadingChunk = false;
               ChunkGroupHeader chunkGroupFooter =
                   ((TsFileSequenceReaderForV2) reader).readChunkGroupFooter();
-              deviceId = chunkGroupFooter.getDeviceID();
+              deviceId = chunkGroupFooter.getDeviceIdString();
               reader.position(firstChunkPositionInChunkGroup);
             } else {
               endChunkGroup();

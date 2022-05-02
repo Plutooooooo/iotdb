@@ -3804,7 +3804,7 @@ public class ReadPointCompactionPerformerTest extends AbstractCompactionTest {
             break;
           case MetaMarker.CHUNK_GROUP_HEADER:
             ChunkGroupHeader chunkGroupHeader = reader.readChunkGroupHeader();
-            String deviceID = chunkGroupHeader.getDeviceID();
+            String deviceID = chunkGroupHeader.getDeviceIdString();
             if (!deviceIdList.contains(deviceID)) {
               Assert.fail(
                   "Target file "

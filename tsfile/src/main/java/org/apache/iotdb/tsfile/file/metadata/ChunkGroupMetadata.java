@@ -19,21 +19,22 @@
 package org.apache.iotdb.tsfile.file.metadata;
 
 import java.util.List;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 
 /** Only maintained when writing, not serialized to TsFile */
 public class ChunkGroupMetadata {
 
-  private String device;
+  private DeviceId deviceId;
 
   private List<ChunkMetadata> chunkMetadataList;
 
-  public ChunkGroupMetadata(String device, List<ChunkMetadata> chunkMetadataList) {
-    this.device = device;
+  public ChunkGroupMetadata(DeviceId deviceId, List<ChunkMetadata> chunkMetadataList) {
+    this.deviceId = deviceId;
     this.chunkMetadataList = chunkMetadataList;
   }
 
-  public String getDevice() {
-    return device;
+  public DeviceId getDeviceId() {
+    return deviceId;
   }
 
   public List<ChunkMetadata> getChunkMetadataList() {

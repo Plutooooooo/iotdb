@@ -240,13 +240,13 @@ public class TsFileSequenceReaderForV2 extends TsFileSequenceReader implements A
 
   @SuppressWarnings("squid:S3776")
   @Override
-  public List<ITimeSeriesMetadata> readITimeseriesMetadata(String device, Set<String> measurements)
+  public List<ITimeSeriesMetadata> readITimeseriesMetadata(String deviceId, Set<String> measurements)
       throws IOException {
     readFileMetadata();
     MetadataIndexNode deviceMetadataIndexNode = tsFileMetaData.getMetadataIndex();
     Pair<MetadataIndexEntry, Long> metadataIndexPair =
         getMetadataAndEndOffsetV2(
-            deviceMetadataIndexNode, device, MetadataIndexNodeType.INTERNAL_DEVICE, false);
+            deviceMetadataIndexNode, deviceId, MetadataIndexNodeType.INTERNAL_DEVICE, false);
     if (metadataIndexPair == null) {
       return Collections.emptyList();
     }

@@ -258,7 +258,7 @@ public class TsFileIOWriter implements AutoCloseable {
     for (ChunkGroupMetadata chunkGroupMetadata : chunkGroupMetadataList) {
       List<ChunkMetadata> chunkMetadatas = chunkGroupMetadata.getChunkMetadataList();
       for (IChunkMetadata chunkMetadata : chunkMetadatas) {
-        Path series = new Path(chunkGroupMetadata.getDevice(), chunkMetadata.getMeasurementUid());
+        Path series = new Path(chunkGroupMetadata.getDeviceId(), chunkMetadata.getMeasurementUid());
         chunkMetadataListMap.computeIfAbsent(series, k -> new ArrayList<>()).add(chunkMetadata);
       }
     }
@@ -374,7 +374,7 @@ public class TsFileIOWriter implements AutoCloseable {
 
     for (ChunkGroupMetadata chunkGroupMetadata : chunkGroupMetadataList) {
       deviceChunkMetadataMap
-          .computeIfAbsent(chunkGroupMetadata.getDevice(), k -> new ArrayList<>())
+          .computeIfAbsent(chunkGroupMetadata.getDeviceId(), k -> new ArrayList<>())
           .addAll(chunkGroupMetadata.getChunkMetadataList());
     }
     return deviceChunkMetadataMap;
@@ -425,7 +425,7 @@ public class TsFileIOWriter implements AutoCloseable {
     Iterator<ChunkGroupMetadata> chunkGroupMetaDataIterator = chunkGroupMetadataList.iterator();
     while (chunkGroupMetaDataIterator.hasNext()) {
       ChunkGroupMetadata chunkGroupMetaData = chunkGroupMetaDataIterator.next();
-      String deviceId = chunkGroupMetaData.getDevice();
+      String deviceId = chunkGroupMetaData.getDeviceId();
       int chunkNum = chunkGroupMetaData.getChunkMetadataList().size();
       Iterator<ChunkMetadata> chunkMetaDataIterator =
           chunkGroupMetaData.getChunkMetadataList().iterator();

@@ -35,7 +35,8 @@ public class Path implements Serializable, Comparable<Path> {
 
   private static final long serialVersionUID = 3405277066329298200L;
   private String measurement;
-  protected String device;
+  protected DeviceId deviceId;
+  protected String deviceIdString;
   protected String fullPath;
   private static final String ILLEGAL_PATH_ARGUMENT = "Path parameter is null";
 
@@ -72,7 +73,7 @@ public class Path implements Serializable, Comparable<Path> {
           }
           if (endIndex != -1 && (endIndex == 0 || pathSc.charAt(endIndex - 1) == '.')) {
             fullPath = pathSc;
-            device = pathSc.substring(0, endIndex - 1);
+            deviceIdString = pathSc.substring(0, endIndex - 1);
             measurement = pathSc.substring(endIndex);
           } else {
             throw new IllegalArgumentException(ILLEGAL_PATH_ARGUMENT);
@@ -82,11 +83,11 @@ public class Path implements Serializable, Comparable<Path> {
           int endIndex = pathSc.lastIndexOf(TsFileConstant.PATH_SEPARATOR_CHAR);
           if (endIndex < 0) {
             fullPath = pathSc;
-            device = "";
+            deviceIdString = "";
             measurement = pathSc;
           } else {
             fullPath = pathSc;
-            device = pathSc.substring(0, endIndex);
+            deviceIdString = pathSc.substring(0, endIndex);
             measurement = pathSc.substring(endIndex + 1);
           }
         } else {
@@ -94,7 +95,7 @@ public class Path implements Serializable, Comparable<Path> {
         }
       } else {
         fullPath = pathSc;
-        device = "";
+        deviceIdString = "";
         measurement = pathSc;
       }
     }
@@ -103,17 +104,17 @@ public class Path implements Serializable, Comparable<Path> {
   /**
    * construct a Path directly using device and measurement, no need to reformat the path
    *
-   * @param device root.deviceType.d1
+   * @param deviceIdString root.deviceType.d1
    * @param measurement s1 , does not contain TsFileConstant.PATH_SEPARATOR
    */
-  public Path(String device, String measurement) {
-    if (device == null || measurement == null) {
+  public Path(String deviceIdString, String measurement) {
+    if (deviceIdString == null || measurement == null) {
       throw new IllegalArgumentException(ILLEGAL_PATH_ARGUMENT);
     }
-    this.device = device;
+    this.deviceIdString = deviceIdString;
     this.measurement = measurement;
-    if (!"".equals(device)) {
-      this.fullPath = device + TsFileConstant.PATH_SEPARATOR + measurement;
+    if (!"".equals(deviceIdString)) {
+      this.fullPath = deviceIdString + TsFileConstant.PATH_SEPARATOR + measurement;
     } else {
       fullPath = measurement;
     }
@@ -123,8 +124,15 @@ public class Path implements Serializable, Comparable<Path> {
     return fullPath;
   }
 
+  public DeviceId getDeviceId(){
+    return deviceId;
+  }
+
   public String getDeviceIdString() {
-    return device;
+    if(deviceIdString == null){
+      deviceIdString = deviceId.toString();
+    }
+    return deviceIdString;
   }
 
   public String getMeasurement() {
@@ -180,14 +188,14 @@ public class Path implements Serializable, Comparable<Path> {
 
   protected void serializeWithoutType(ByteBuffer byteBuffer) {
     ReadWriteIOUtils.write(measurement, byteBuffer);
-    ReadWriteIOUtils.write(device, byteBuffer);
+    deviceId.serializeTo(byteBuffer);
     ReadWriteIOUtils.write(fullPath, byteBuffer);
   }
 
   public static Path deserialize(ByteBuffer byteBuffer) {
     Path path = new Path();
     path.measurement = ReadWriteIOUtils.readString(byteBuffer);
-    path.device = ReadWriteIOUtils.readString(byteBuffer);
+    path.deviceId = DeviceId.deserializeFrom(byteBuffer);
     path.fullPath = ReadWriteIOUtils.readString(byteBuffer);
     return path;
   }

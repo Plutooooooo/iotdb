@@ -257,7 +257,7 @@ public class CompactionCheckerUtils {
                 timeValuePairs.addAll(currTimeValuePairs);
                 currTimeValuePairs.clear();
               }
-              device = chunkGroupHeader.getDeviceID();
+              device = chunkGroupHeader.getDeviceIdString();
               break;
             case MetaMarker.OPERATION_INDEX_RANGE:
               reader.readPlanIndex();
@@ -445,7 +445,7 @@ public class CompactionCheckerUtils {
               currChunkPagePointsNum.add(pagePointsNum);
               pagePointsNum = new ArrayList<>();
             }
-            entity = chunkGroupHeader.getDeviceID();
+            entity = chunkGroupHeader.getDeviceIdString();
             break;
           case MetaMarker.OPERATION_INDEX_RANGE:
             reader.readPlanIndex();

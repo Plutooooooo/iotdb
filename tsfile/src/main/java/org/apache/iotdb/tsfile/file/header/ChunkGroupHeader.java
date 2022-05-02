@@ -21,6 +21,7 @@ package org.apache.iotdb.tsfile.file.header;
 
 import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
 import org.apache.iotdb.tsfile.file.MetaMarker;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.reader.TsFileInput;
 import org.apache.iotdb.tsfile.utils.ReadWriteForEncodingUtils;
 import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
@@ -33,7 +34,7 @@ public class ChunkGroupHeader {
 
   private static final byte MARKER = MetaMarker.CHUNK_GROUP_HEADER;
 
-  private final String deviceID;
+  private final DeviceId deviceId;
 
   // this field does not need to be serialized.
   private int serializedSize;
@@ -41,16 +42,15 @@ public class ChunkGroupHeader {
   /**
    * constructor of CHUNK_GROUP_HEADER.
    *
-   * @param deviceID device ID
+   * @param deviceId device ID
    */
-  public ChunkGroupHeader(String deviceID) {
-    this.deviceID = deviceID;
-    this.serializedSize = getSerializedSize(deviceID);
+  public ChunkGroupHeader(DeviceId deviceId) {
+    this.deviceId = deviceId;
+    this.serializedSize = getSerializedSize(deviceId);
   }
 
-  private int getSerializedSize(String deviceID) {
-    int length = deviceID.getBytes(TSFileConfig.STRING_CHARSET).length;
-    return Byte.BYTES + ReadWriteForEncodingUtils.varIntSize(length) + length;
+  private int getSerializedSize(DeviceId deviceId) {
+    return Byte.BYTES + deviceId.getSerializedSize();
   }
 
   /**
@@ -67,8 +67,8 @@ public class ChunkGroupHeader {
       }
     }
 
-    String deviceID = ReadWriteIOUtils.readVarIntString(inputStream);
-    return new ChunkGroupHeader(deviceID);
+    DeviceId deviceId = DeviceId.deserializeFrom(inputStream);
+    return new ChunkGroupHeader(deviceId);
   }
 
   /**
@@ -90,8 +90,8 @@ public class ChunkGroupHeader {
     return serializedSize;
   }
 
-  public String getDeviceID() {
-    return deviceID;
+  public String getDeviceIdString() {
+    return deviceId.toString();
   }
 
   /**
@@ -112,7 +112,7 @@ public class ChunkGroupHeader {
   public String toString() {
     return "ChunkGroupHeader{"
         + "deviceID='"
-        + deviceID
+        + deviceId.toString()
         + '\''
         + ", serializedSize="
         + serializedSize

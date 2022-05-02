@@ -1526,7 +1526,7 @@ public class PlanExecutor implements IPlanExecutor {
 
     Set<PartialPath> registeredSeries = new HashSet<>();
     for (ChunkGroupMetadata chunkGroupMetadata : chunkGroupMetadataList) {
-      String device = chunkGroupMetadata.getDevice();
+      String device = chunkGroupMetadata.getDeviceId().toString();
       boolean isAligned = false;
       Set<String> existSeriesSet = new HashSet<>();
       List<PartialPath> needRegisterSeries = new ArrayList<>();
@@ -1551,7 +1551,7 @@ public class PlanExecutor implements IPlanExecutor {
         }
         PartialPath series =
             new PartialPath(
-                chunkGroupMetadata.getDevice()
+                chunkGroupMetadata.getDeviceId()
                     + TsFileConstant.PATH_SEPARATOR
                     + chunkMetadata.getMeasurementUid());
         if (!registeredSeries.contains(series)) {

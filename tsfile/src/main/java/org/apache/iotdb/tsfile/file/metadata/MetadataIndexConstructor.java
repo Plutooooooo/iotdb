@@ -22,6 +22,7 @@ package org.apache.iotdb.tsfile.file.metadata;
 import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
 import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
 import org.apache.iotdb.tsfile.file.metadata.enums.MetadataIndexNodeType;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.write.writer.TsFileOutput;
 
 import java.io.IOException;
@@ -48,13 +49,13 @@ public class MetadataIndexConstructor {
    */
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   public static MetadataIndexNode constructMetadataIndex(
-      Map<String, List<TimeseriesMetadata>> deviceTimeseriesMetadataMap, TsFileOutput out)
+      Map<DeviceId, List<TimeseriesMetadata>> deviceTimeseriesMetadataMap, TsFileOutput out)
       throws IOException {
 
-    Map<String, MetadataIndexNode> deviceMetadataIndexMap = new TreeMap<>();
+    Map<DeviceId, MetadataIndexNode> deviceMetadataIndexMap = new TreeMap<>();
 
     // for timeseriesMetadata of each device
-    for (Entry<String, List<TimeseriesMetadata>> entry : deviceTimeseriesMetadataMap.entrySet()) {
+    for (Entry<DeviceId, List<TimeseriesMetadata>> entry : deviceTimeseriesMetadataMap.entrySet()) {
       if (entry.getValue().isEmpty()) {
         continue;
       }
@@ -86,7 +87,7 @@ public class MetadataIndexConstructor {
     if (deviceMetadataIndexMap.size() <= config.getMaxDegreeOfIndexNode()) {
       MetadataIndexNode metadataIndexNode =
           new MetadataIndexNode(MetadataIndexNodeType.LEAF_DEVICE);
-      for (Map.Entry<String, MetadataIndexNode> entry : deviceMetadataIndexMap.entrySet()) {
+      for (Map.Entry<DeviceId, MetadataIndexNode> entry : deviceMetadataIndexMap.entrySet()) {
         metadataIndexNode.addEntry(new MetadataIndexEntry(entry.getKey(), out.getPosition()));
         entry.getValue().serializeTo(out.wrapAsStream());
       }
@@ -98,7 +99,7 @@ public class MetadataIndexConstructor {
     Queue<MetadataIndexNode> deviceMetadataIndexQueue = new ArrayDeque<>();
     MetadataIndexNode currentIndexNode = new MetadataIndexNode(MetadataIndexNodeType.LEAF_DEVICE);
 
-    for (Map.Entry<String, MetadataIndexNode> entry : deviceMetadataIndexMap.entrySet()) {
+    for (Map.Entry<DeviceId, MetadataIndexNode> entry : deviceMetadataIndexMap.entrySet()) {
       // when constructing from internal node, each node is related to an entry
       if (currentIndexNode.isFull()) {
         addCurrentIndexNodeToQueue(currentIndexNode, deviceMetadataIndexQueue, out);

@@ -174,7 +174,7 @@ public class TsFileRewriteTool implements AutoCloseable {
         switch (marker) {
           case MetaMarker.CHUNK_GROUP_HEADER:
             ChunkGroupHeader chunkGroupHeader = reader.readChunkGroupHeader();
-            deviceId = chunkGroupHeader.getDeviceID();
+            deviceId = chunkGroupHeader.getDeviceIdString();
             firstChunkInChunkGroup = true;
             endChunkGroup();
             break;

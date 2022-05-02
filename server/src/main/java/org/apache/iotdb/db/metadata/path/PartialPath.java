@@ -323,7 +323,7 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
     PartialPath result = new PartialPath();
     result.nodes = nodes;
     result.fullPath = fullPath;
-    result.device = device;
+    result.deviceIdString = deviceIdString;
     return result;
   }
 
@@ -366,9 +366,7 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
 
   @Override
   public String getDeviceIdString() {
-    if (device != null) {
-      return device;
-    } else {
+    if (deviceIdString == null) {
       if (nodes.length == 1) {
         return "";
       }
@@ -377,9 +375,9 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
         s.append(TsFileConstant.PATH_SEPARATOR);
         s.append(parseNodeString(nodes[i]));
       }
-      device = s.toString();
-      return device;
+      deviceIdString = s.toString();
     }
+    return deviceIdString;
   }
 
   /**
@@ -511,7 +509,7 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
     }
     partialPath.nodes = nodes;
     partialPath.setMeasurement(path.getMeasurement());
-    partialPath.device = path.getDeviceIdString();
+    partialPath.deviceIdString = path.getDeviceIdString();
     partialPath.fullPath = path.getFullPath();
     return partialPath;
   }

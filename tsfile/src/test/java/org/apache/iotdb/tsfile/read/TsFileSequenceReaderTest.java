@@ -95,9 +95,9 @@ public class TsFileSequenceReaderTest {
           long endOffset = reader.position();
           Pair<Long, Long> pair = new Pair<>(startOffset, endOffset);
           deviceChunkGroupMetadataOffsets.putIfAbsent(
-              chunkGroupHeader.getDeviceID(), new ArrayList<>());
+              chunkGroupHeader.getDeviceIdString(), new ArrayList<>());
           List<Pair<Long, Long>> metadatas =
-              deviceChunkGroupMetadataOffsets.get(chunkGroupHeader.getDeviceID());
+              deviceChunkGroupMetadataOffsets.get(chunkGroupHeader.getDeviceIdString());
           metadatas.add(pair);
           startOffset = endOffset;
           break;

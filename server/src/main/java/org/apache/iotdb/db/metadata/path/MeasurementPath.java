@@ -122,7 +122,7 @@ public class MeasurementPath extends PartialPath {
     MeasurementPath result = new MeasurementPath();
     result.nodes = nodes;
     result.fullPath = fullPath;
-    result.device = device;
+    result.deviceIdString = deviceIdString;
     result.measurementAlias = measurementAlias;
     result.measurementSchema = measurementSchema;
     result.isUnderAlignedEntity = isUnderAlignedEntity;
@@ -185,7 +185,7 @@ public class MeasurementPath extends PartialPath {
     measurementPath.isUnderAlignedEntity = ReadWriteIOUtils.readBool(byteBuffer);
     measurementPath.measurementAlias = ReadWriteIOUtils.readString(byteBuffer);
     measurementPath.nodes = partialPath.nodes;
-    measurementPath.device = partialPath.getDeviceIdString();
+    measurementPath.deviceIdString = partialPath.getDeviceIdString();
     measurementPath.fullPath = partialPath.getFullPath();
     return measurementPath;
   }
