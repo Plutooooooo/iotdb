@@ -389,7 +389,7 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
   protected String parseNodeString(String node) {
     node = node.replace("`", "``");
     if (node.contains("`") || node.contains(".")) {
-      return "`" + node + "`";
+      node = String.format("`%s`", node);
     }
     return node;
   }

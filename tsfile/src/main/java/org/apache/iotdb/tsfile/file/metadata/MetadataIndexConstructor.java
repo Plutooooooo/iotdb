@@ -88,7 +88,9 @@ public class MetadataIndexConstructor {
       MetadataIndexNode metadataIndexNode =
           new MetadataIndexNode(MetadataIndexNodeType.LEAF_DEVICE);
       for (Map.Entry<DeviceId, MetadataIndexNode> entry : deviceMetadataIndexMap.entrySet()) {
-        metadataIndexNode.addEntry(new MetadataIndexEntry(entry.getKey(), out.getPosition()));
+        // in MetadataIndexEntry, DeviceId is stored as a string
+        metadataIndexNode.addEntry(
+            new MetadataIndexEntry(entry.getKey().getDeviceIdString(), out.getPosition()));
         entry.getValue().serializeTo(out.wrapAsStream());
       }
       metadataIndexNode.setEndOffset(out.getPosition());
@@ -105,7 +107,8 @@ public class MetadataIndexConstructor {
         addCurrentIndexNodeToQueue(currentIndexNode, deviceMetadataIndexQueue, out);
         currentIndexNode = new MetadataIndexNode(MetadataIndexNodeType.LEAF_DEVICE);
       }
-      currentIndexNode.addEntry(new MetadataIndexEntry(entry.getKey(), out.getPosition()));
+      currentIndexNode.addEntry(
+          new MetadataIndexEntry(entry.getKey().getDeviceIdString(), out.getPosition()));
       entry.getValue().serializeTo(out.wrapAsStream());
     }
     addCurrentIndexNodeToQueue(currentIndexNode, deviceMetadataIndexQueue, out);

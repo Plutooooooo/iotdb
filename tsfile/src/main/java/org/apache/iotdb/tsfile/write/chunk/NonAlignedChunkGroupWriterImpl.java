@@ -22,6 +22,7 @@ import org.apache.iotdb.tsfile.common.constant.TsFileConstant;
 import org.apache.iotdb.tsfile.exception.write.UnSupportedDataTypeException;
 import org.apache.iotdb.tsfile.exception.write.WriteProcessException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.utils.Binary;
 import org.apache.iotdb.tsfile.write.record.Tablet;
 import org.apache.iotdb.tsfile.write.record.datapoint.DataPoint;
@@ -43,7 +44,7 @@ public class NonAlignedChunkGroupWriterImpl implements IChunkGroupWriter {
 
   private static final Logger LOG = LoggerFactory.getLogger(NonAlignedChunkGroupWriterImpl.class);
 
-  private final String deviceId;
+  private final DeviceId deviceId;
 
   /** Map(measurementID, ChunkWriterImpl). Aligned measurementId is empty. */
   private Map<String, ChunkWriterImpl> chunkWriters = new LinkedHashMap<>();
@@ -51,7 +52,7 @@ public class NonAlignedChunkGroupWriterImpl implements IChunkGroupWriter {
   // measurementId -> lastTime
   private Map<String, Long> lastTimeMap = new HashMap<>();
 
-  public NonAlignedChunkGroupWriterImpl(String deviceId) {
+  public NonAlignedChunkGroupWriterImpl(DeviceId deviceId) {
     this.deviceId = deviceId;
   }
 

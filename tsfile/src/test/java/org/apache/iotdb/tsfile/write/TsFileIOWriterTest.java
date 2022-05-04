@@ -31,6 +31,7 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.file.metadata.statistics.Statistics;
 import org.apache.iotdb.tsfile.file.metadata.utils.TestHelper;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.utils.MeasurementGroup;
 import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
@@ -113,7 +114,7 @@ public class TsFileIOWriterTest {
       // chunk group header
       Assert.assertEquals(MetaMarker.CHUNK_GROUP_HEADER, reader.readMarker());
       chunkGroupHeader = reader.readChunkGroupHeader();
-      Assert.assertEquals(DEVICE_1, chunkGroupHeader.getDeviceIdString());
+      Assert.assertEquals(DEVICE_1, chunkGroupHeader.getDeviceId());
       // ordinary chunk header
       Assert.assertEquals(MetaMarker.ONLY_ONE_PAGE_CHUNK_HEADER, reader.readMarker());
       header = reader.readChunkHeader(MetaMarker.ONLY_ONE_PAGE_CHUNK_HEADER);
@@ -124,7 +125,7 @@ public class TsFileIOWriterTest {
       // chunk group header
       Assert.assertEquals(MetaMarker.CHUNK_GROUP_HEADER, reader.readMarker());
       chunkGroupHeader = reader.readChunkGroupHeader();
-      Assert.assertEquals(DEVICE_2, chunkGroupHeader.getDeviceIdString());
+      Assert.assertEquals(DEVICE_2, chunkGroupHeader.getDeviceId());
       // vector chunk header (time)
       Assert.assertEquals(MetaMarker.ONLY_ONE_PAGE_TIME_CHUNK_HEADER, reader.readMarker());
       header = reader.readChunkHeader(MetaMarker.ONLY_ONE_PAGE_CHUNK_HEADER);
@@ -146,10 +147,10 @@ public class TsFileIOWriterTest {
     Assert.assertEquals(MetaMarker.SEPARATOR, reader.readMarker());
 
     // make sure timeseriesMetadata is only
-    Map<String, List<TimeseriesMetadata>> deviceTimeseriesMetadataMap =
+    Map<DeviceId, List<TimeseriesMetadata>> deviceTimeseriesMetadataMap =
         reader.getAllTimeseriesMetadata();
     Set<String> pathSet = new HashSet<>();
-    for (Map.Entry<String, List<TimeseriesMetadata>> entry :
+    for (Map.Entry<DeviceId, List<TimeseriesMetadata>> entry :
         deviceTimeseriesMetadataMap.entrySet()) {
       for (TimeseriesMetadata timeseriesMetadata : entry.getValue()) {
         String seriesPath = entry.getKey() + "." + timeseriesMetadata.getMeasurementId();
@@ -167,7 +168,7 @@ public class TsFileIOWriterTest {
       throws IOException {
     for (int i = 0; i < CHUNK_GROUP_NUM; i++) {
       // chunk group
-      writer.startChunkGroup(DEVICE_1);
+      writer.startChunkGroup(new DeviceId(DEVICE_1));
       // ordinary chunk, chunk statistics
       Statistics statistics = Statistics.getStatsByType(measurementSchema.getType());
       statistics.updateStats(0L, 0L);
@@ -189,7 +190,7 @@ public class TsFileIOWriterTest {
       TsFileIOWriter writer, VectorMeasurementSchema vectorMeasurementSchema) throws IOException {
     for (int i = 0; i < CHUNK_GROUP_NUM; i++) {
       // chunk group
-      writer.startChunkGroup(DEVICE_2);
+      writer.startChunkGroup(new DeviceId(DEVICE_2));
       // vector chunk (time)
       writer.startFlushChunk(
           vectorMeasurementSchema.getMeasurementId(),

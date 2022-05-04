@@ -44,6 +44,7 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.fileSystem.FSFactoryProducer;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
 import org.apache.iotdb.tsfile.read.common.BatchData;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.common.TimeRange;
 import org.apache.iotdb.tsfile.read.reader.page.PageReader;
 import org.apache.iotdb.tsfile.utils.Binary;
@@ -174,7 +175,7 @@ public class TsFileRewriteTool implements AutoCloseable {
         switch (marker) {
           case MetaMarker.CHUNK_GROUP_HEADER:
             ChunkGroupHeader chunkGroupHeader = reader.readChunkGroupHeader();
-            deviceId = chunkGroupHeader.getDeviceIdString();
+            deviceId = chunkGroupHeader.getDeviceId().getDeviceIdString();
             firstChunkInChunkGroup = true;
             endChunkGroup();
             break;
@@ -321,7 +322,7 @@ public class TsFileRewriteTool implements AutoCloseable {
       long partitionId = entry.getKey();
       TsFileIOWriter tsFileIOWriter = partitionWriterMap.get(partitionId);
       if (firstChunkInChunkGroup || !tsFileIOWriter.isWritingChunkGroup()) {
-        tsFileIOWriter.startChunkGroup(deviceId);
+        tsFileIOWriter.startChunkGroup(new DeviceId(deviceId));
       }
       // write chunks to their own upgraded tsFiles
       IChunkWriter chunkWriter = entry.getValue();
@@ -493,10 +494,10 @@ public class TsFileRewriteTool implements AutoCloseable {
       throws IOException {
     tsFileIOWriter.endFile();
     TsFileResource tsFileResource = new TsFileResource(tsFileIOWriter.getFile());
-    Map<String, List<TimeseriesMetadata>> deviceTimeseriesMetadataMap =
+    Map<DeviceId, List<TimeseriesMetadata>> deviceTimeseriesMetadataMap =
         tsFileIOWriter.getDeviceTimeseriesMetadataMap();
-    for (Entry<String, List<TimeseriesMetadata>> entry : deviceTimeseriesMetadataMap.entrySet()) {
-      String device = entry.getKey();
+    for (Entry<DeviceId, List<TimeseriesMetadata>> entry : deviceTimeseriesMetadataMap.entrySet()) {
+      String device = entry.getKey().getDeviceIdString();
       for (TimeseriesMetadata timeseriesMetaData : entry.getValue()) {
         tsFileResource.updateStartTime(device, timeseriesMetaData.getStatistics().getStartTime());
         tsFileResource.updateEndTime(device, timeseriesMetaData.getStatistics().getEndTime());

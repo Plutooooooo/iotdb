@@ -30,6 +30,7 @@ public class DeviceIdTest {
     printStringArray(deviceId.splitDeviceIdToNodes(test1));
     printStringArray(deviceId.splitDeviceIdToNodes(test2));
     printStringArray(deviceId.splitDeviceIdToNodes(test3));
+    printStringArray(deviceId.splitDeviceIdToNodes(""));
   }
 
   private void printStringArray(String[] array) {

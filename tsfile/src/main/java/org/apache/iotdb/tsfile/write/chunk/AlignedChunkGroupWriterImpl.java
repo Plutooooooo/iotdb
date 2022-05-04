@@ -27,6 +27,7 @@ import org.apache.iotdb.tsfile.exception.write.WriteProcessException;
 import org.apache.iotdb.tsfile.file.metadata.enums.CompressionType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.utils.Binary;
 import org.apache.iotdb.tsfile.write.record.Tablet;
 import org.apache.iotdb.tsfile.write.record.datapoint.DataPoint;
@@ -47,7 +48,7 @@ import java.util.Set;
 public class AlignedChunkGroupWriterImpl implements IChunkGroupWriter {
   private static final Logger LOG = LoggerFactory.getLogger(AlignedChunkGroupWriterImpl.class);
 
-  private final String deviceId;
+  private final DeviceId deviceId;
 
   // measurementID -> ValueChunkWriter
   private Map<String, ValueChunkWriter> valueChunkWriterMap = new LinkedHashMap<>();
@@ -58,7 +59,7 @@ public class AlignedChunkGroupWriterImpl implements IChunkGroupWriter {
 
   private long lastTime = -1;
 
-  public AlignedChunkGroupWriterImpl(String deviceId) {
+  public AlignedChunkGroupWriterImpl(DeviceId deviceId) {
     this.deviceId = deviceId;
     String timeMeasurementId = "";
     CompressionType compressionType = TSFileDescriptor.getInstance().getConfig().getCompressor();

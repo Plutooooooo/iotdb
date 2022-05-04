@@ -177,6 +177,7 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.read.TsFileCheckStatus;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.common.Field;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.read.common.RowRecord;
@@ -1475,10 +1476,10 @@ public class PlanExecutor implements IPlanExecutor {
 
   private void loadNewTsFileVerifyMetadata(TsFileSequenceReader tsFileSequenceReader)
       throws MetadataException, QueryProcessException, IOException {
-    Map<String, List<TimeseriesMetadata>> metadataSet =
+    Map<DeviceId, List<TimeseriesMetadata>> metadataSet =
         tsFileSequenceReader.getAllTimeseriesMetadata();
-    for (Map.Entry<String, List<TimeseriesMetadata>> entry : metadataSet.entrySet()) {
-      String deviceId = entry.getKey();
+    for (Map.Entry<DeviceId, List<TimeseriesMetadata>> entry : metadataSet.entrySet()) {
+      String deviceId = entry.getKey().getDeviceIdString();
       PartialPath devicePath = new PartialPath(deviceId);
       if (!IoTDB.schemaProcessor.isPathExist(devicePath)) {
         continue;

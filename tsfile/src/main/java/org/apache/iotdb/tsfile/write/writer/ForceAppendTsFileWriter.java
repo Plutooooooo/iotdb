@@ -24,6 +24,7 @@ import org.apache.iotdb.tsfile.file.metadata.ChunkMetadata;
 import org.apache.iotdb.tsfile.file.metadata.TsFileMetadata;
 import org.apache.iotdb.tsfile.fileSystem.FSFactoryProducer;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,8 +67,8 @@ public class ForceAppendTsFileWriter extends TsFileIOWriter {
       truncatePosition = tsFileMetadata.getMetaOffset();
 
       canWrite = true;
-      List<String> devices = reader.getAllDevices();
-      for (String device : devices) {
+      List<DeviceId> devices = reader.getAllDevices();
+      for (DeviceId device : devices) {
         List<ChunkMetadata> chunkMetadataList = new ArrayList<>();
         reader.readChunkMetadataInDevice(device).values().forEach(chunkMetadataList::addAll);
         ChunkGroupMetadata chunkGroupMetadata = new ChunkGroupMetadata(device, chunkMetadataList);

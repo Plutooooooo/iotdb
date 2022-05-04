@@ -18,6 +18,7 @@
  */
 package org.apache.iotdb.tsfile.write.record;
 
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.utils.StringContainer;
 import org.apache.iotdb.tsfile.write.record.datapoint.DataPoint;
 
@@ -33,7 +34,7 @@ public class TSRecord {
   /** timestamp of this TSRecord. */
   public long time;
   /** deviceId of this TSRecord. */
-  public String deviceId;
+  public DeviceId deviceId;
   /** all value of this TSRecord. */
   public List<DataPoint> dataPointList = new ArrayList<>();
 
@@ -43,9 +44,14 @@ public class TSRecord {
    * @param timestamp timestamp of this TSRecord
    * @param deviceId deviceId of this TSRecord
    */
-  public TSRecord(long timestamp, String deviceId) {
+  public TSRecord(long timestamp, DeviceId deviceId) {
     this.time = timestamp;
     this.deviceId = deviceId;
+  }
+
+  public TSRecord(long timestamp, String deviceId) {
+    this.time = timestamp;
+    this.deviceId = new DeviceId(deviceId);
   }
 
   public void setTime(long timestamp) {

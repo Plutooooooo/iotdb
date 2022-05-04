@@ -36,6 +36,7 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.file.metadata.statistics.Statistics;
 import org.apache.iotdb.tsfile.fileSystem.FSFactoryProducer;
 import org.apache.iotdb.tsfile.read.common.Chunk;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.utils.BytesUtils;
 import org.apache.iotdb.tsfile.utils.PublicBAOS;
@@ -83,10 +84,10 @@ public class TsFileIOWriter implements AutoCloseable {
   protected List<ChunkGroupMetadata> chunkGroupMetadataList = new ArrayList<>();
 
   private long markedPosition;
-  private String currentChunkGroupDeviceId;
+  private DeviceId currentChunkGroupDeviceId;
 
   // for upgrade tool and split tool
-  Map<String, List<TimeseriesMetadata>> deviceTimeseriesMetadataMap;
+  Map<DeviceId, List<TimeseriesMetadata>> deviceTimeseriesMetadataMap;
 
   // the two longs marks the index range of operations in current MemTable
   // and are serialized after MetaMarker.OPERATION_INDEX_RANGE to recover file-level range
@@ -142,7 +143,7 @@ public class TsFileIOWriter implements AutoCloseable {
     out.write(VERSION_NUMBER_BYTE);
   }
 
-  public int startChunkGroup(String deviceId) throws IOException {
+  public int startChunkGroup(DeviceId deviceId) throws IOException {
     this.currentChunkGroupDeviceId = deviceId;
     if (logger.isDebugEnabled()) {
       logger.debug("start chunk group:{}, file position {}", deviceId, out.getPosition());
@@ -354,7 +355,7 @@ public class TsFileIOWriter implements AutoCloseable {
             seriesStatistics,
             publicBAOS);
     deviceTimeseriesMetadataMap
-        .computeIfAbsent(path.getDeviceIdString(), k -> new ArrayList<>())
+        .computeIfAbsent(path.getDeviceId(), k -> new ArrayList<>())
         .add(timeseriesMetadata);
   }
 
@@ -374,7 +375,8 @@ public class TsFileIOWriter implements AutoCloseable {
 
     for (ChunkGroupMetadata chunkGroupMetadata : chunkGroupMetadataList) {
       deviceChunkMetadataMap
-          .computeIfAbsent(chunkGroupMetadata.getDeviceId(), k -> new ArrayList<>())
+          .computeIfAbsent(
+              chunkGroupMetadata.getDeviceId().getDeviceIdString(), k -> new ArrayList<>())
           .addAll(chunkGroupMetadata.getChunkMetadataList());
     }
     return deviceChunkMetadataMap;
@@ -396,6 +398,7 @@ public class TsFileIOWriter implements AutoCloseable {
    * close the outputStream or file channel without writing FileMetadata. This is just used for
    * Testing.
    */
+  @Override
   public void close() throws IOException {
     canWrite = false;
     out.close();
@@ -425,7 +428,7 @@ public class TsFileIOWriter implements AutoCloseable {
     Iterator<ChunkGroupMetadata> chunkGroupMetaDataIterator = chunkGroupMetadataList.iterator();
     while (chunkGroupMetaDataIterator.hasNext()) {
       ChunkGroupMetadata chunkGroupMetaData = chunkGroupMetaDataIterator.next();
-      String deviceId = chunkGroupMetaData.getDeviceId();
+      DeviceId deviceId = chunkGroupMetaData.getDeviceId();
       int chunkNum = chunkGroupMetaData.getChunkMetadataList().size();
       Iterator<ChunkMetadata> chunkMetaDataIterator =
           chunkGroupMetaData.getChunkMetadataList().iterator();
@@ -476,7 +479,7 @@ public class TsFileIOWriter implements AutoCloseable {
    *
    * @return DeviceTimeseriesMetadataMap
    */
-  public Map<String, List<TimeseriesMetadata>> getDeviceTimeseriesMetadataMap() {
+  public Map<DeviceId, List<TimeseriesMetadata>> getDeviceTimeseriesMetadataMap() {
     return deviceTimeseriesMetadataMap;
   }
 

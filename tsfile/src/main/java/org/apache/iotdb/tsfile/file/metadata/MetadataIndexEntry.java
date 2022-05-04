@@ -51,6 +51,7 @@ public class MetadataIndexEntry {
     this.offset = offset;
   }
 
+  @Override
   public String toString() {
     return "<" + name + "," + offset + ">";
   }

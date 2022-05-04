@@ -32,6 +32,7 @@ import org.apache.iotdb.tsfile.fileSystem.fsFactory.FSFactory;
 import org.apache.iotdb.tsfile.read.TsFileCheckStatus;
 import org.apache.iotdb.tsfile.read.TsFileReader;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.read.common.RowRecord;
 import org.apache.iotdb.tsfile.read.expression.QueryExpression;
@@ -131,7 +132,7 @@ public class RestorableTsFileIOWriterTest {
   @Test
   public void testOnlyOneChunkHeader() throws Exception {
     TsFileWriter writer = new TsFileWriter(file);
-    writer.getIOWriter().startChunkGroup("root.sg1.d1");
+    writer.getIOWriter().startChunkGroup(new DeviceId("root.sg1.d1"));
     writer
         .getIOWriter()
         .startFlushChunk(

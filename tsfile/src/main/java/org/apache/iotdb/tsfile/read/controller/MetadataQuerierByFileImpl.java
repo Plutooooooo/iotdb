@@ -28,6 +28,7 @@ import org.apache.iotdb.tsfile.file.metadata.TsFileMetadata;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader.LocateStatus;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.read.common.TimeRange;
 
@@ -94,24 +95,24 @@ public class MetadataQuerierByFileImpl implements IMetadataQuerier {
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   public void loadChunkMetaDatas(List<Path> paths) throws IOException {
     // group measurements by device
-    TreeMap<String, Set<String>> deviceMeasurementsMap = new TreeMap<>();
+    TreeMap<DeviceId, Set<String>> deviceMeasurementsMap = new TreeMap<>();
     for (Path path : paths) {
-      if (!deviceMeasurementsMap.containsKey(path.getDeviceIdString())) {
-        deviceMeasurementsMap.put(path.getDeviceIdString(), new HashSet<>());
+      if (!deviceMeasurementsMap.containsKey(path.getDeviceId())) {
+        deviceMeasurementsMap.put(path.getDeviceId(), new HashSet<>());
       }
-      deviceMeasurementsMap.get(path.getDeviceIdString()).add(path.getMeasurement());
+      deviceMeasurementsMap.get(path.getDeviceId()).add(path.getMeasurement());
     }
     int count = 0;
     boolean enough = false;
-    for (Map.Entry<String, Set<String>> deviceMeasurements : deviceMeasurementsMap.entrySet()) {
+    for (Map.Entry<DeviceId, Set<String>> deviceMeasurements : deviceMeasurementsMap.entrySet()) {
       if (enough) {
         break;
       }
-      String selectedDevice = deviceMeasurements.getKey();
+      DeviceId selectedDevice = deviceMeasurements.getKey();
       Set<String> selectedMeasurements = deviceMeasurements.getValue();
-      List<String> devices = this.tsFileReader.getAllDevices();
-      String[] deviceNames = devices.toArray(new String[0]);
-      if (Arrays.binarySearch(deviceNames, selectedDevice) < 0) {
+      List<DeviceId> devices = this.tsFileReader.getAllDevices();
+      DeviceId[] devicesArray = devices.toArray(new DeviceId[0]);
+      if (Arrays.binarySearch(devicesArray, selectedDevice) < 0) {
         continue;
       }
 
@@ -169,14 +170,14 @@ public class MetadataQuerierByFileImpl implements IMetadataQuerier {
 
     // group measurements by device
 
-    TreeMap<String, Set<String>> deviceMeasurementsMap = new TreeMap<>();
+    TreeMap<DeviceId, Set<String>> deviceMeasurementsMap = new TreeMap<>();
     for (Path path : paths) {
       deviceMeasurementsMap
-          .computeIfAbsent(path.getDeviceIdString(), key -> new HashSet<>())
+          .computeIfAbsent(path.getDeviceId(), key -> new HashSet<>())
           .add(path.getMeasurement());
     }
-    for (Map.Entry<String, Set<String>> deviceMeasurements : deviceMeasurementsMap.entrySet()) {
-      String selectedDevice = deviceMeasurements.getKey();
+    for (Map.Entry<DeviceId, Set<String>> deviceMeasurements : deviceMeasurementsMap.entrySet()) {
+      DeviceId selectedDevice = deviceMeasurements.getKey();
       Set<String> selectedMeasurements = deviceMeasurements.getValue();
 
       // measurement -> ChunkMetadata list

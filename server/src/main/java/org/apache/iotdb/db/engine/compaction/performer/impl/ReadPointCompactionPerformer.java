@@ -46,6 +46,7 @@ import org.apache.iotdb.db.utils.QueryUtils;
 import org.apache.iotdb.tsfile.file.metadata.TimeseriesMetadata;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.common.BatchData;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.reader.IBatchReader;
 import org.apache.iotdb.tsfile.utils.Pair;
 import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
@@ -250,9 +251,9 @@ public class ReadPointCompactionPerformer
       if (!fileResource.getTsFile().exists()) {
         continue;
       }
-      for (Map.Entry<String, List<TimeseriesMetadata>> entry :
+      for (Map.Entry<DeviceId, List<TimeseriesMetadata>> entry :
           fileIOWriter.getDeviceTimeseriesMetadataMap().entrySet()) {
-        String device = entry.getKey();
+        String device = entry.getKey().getDeviceIdString();
         for (TimeseriesMetadata timeseriesMetadata : entry.getValue()) {
           fileResource.updateStartTime(device, timeseriesMetadata.getStatistics().getStartTime());
           fileResource.updateEndTime(device, timeseriesMetadata.getStatistics().getEndTime());

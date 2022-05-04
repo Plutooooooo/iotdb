@@ -23,6 +23,7 @@ import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
 import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
 import org.apache.iotdb.tsfile.file.metadata.ChunkMetadata;
 import org.apache.iotdb.tsfile.file.metadata.IChunkMetadata;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.utils.FileGenerator;
 
@@ -122,13 +123,13 @@ public class MeasurementChunkMetadataListMapIteratorTest {
     FileGenerator.generateFile(10000, deviceNum, measurementNum);
 
     try (TsFileSequenceReader fileReader = new TsFileSequenceReader(FILE_PATH)) {
-      Map<String, List<String>> deviceMeasurementListMap = fileReader.getDeviceMeasurementsMap();
+      Map<DeviceId, List<String>> deviceMeasurementListMap = fileReader.getDeviceMeasurementsMap();
 
-      List<String> devices = fileReader.getAllDevices();
+      List<DeviceId> devices = fileReader.getAllDevices();
 
-      Map<String, Map<String, List<IChunkMetadata>>> expectedDeviceMeasurementChunkMetadataListMap =
-          new HashMap<>();
-      for (String device : devices) {
+      Map<DeviceId, Map<String, List<IChunkMetadata>>>
+          expectedDeviceMeasurementChunkMetadataListMap = new HashMap<>();
+      for (DeviceId device : devices) {
         for (String measurement : deviceMeasurementListMap.get(device)) {
           expectedDeviceMeasurementChunkMetadataListMap
               .computeIfAbsent(device, d -> new HashMap<>())
@@ -137,7 +138,7 @@ public class MeasurementChunkMetadataListMapIteratorTest {
         }
       }
 
-      for (String device : devices) {
+      for (DeviceId device : devices) {
         Map<String, List<IChunkMetadata>> expected =
             expectedDeviceMeasurementChunkMetadataListMap.get(device);
 
@@ -156,7 +157,7 @@ public class MeasurementChunkMetadataListMapIteratorTest {
 
       // test not exist device
       Iterator<Map<String, List<ChunkMetadata>>> iterator =
-          fileReader.getMeasurementChunkMetadataListMapIterator("dd");
+          fileReader.getMeasurementChunkMetadataListMapIterator(new DeviceId("dd"));
       Assert.assertFalse(iterator.hasNext());
     }
 
@@ -182,7 +183,7 @@ public class MeasurementChunkMetadataListMapIteratorTest {
     FileGenerator.generateFile(10000, deviceNum, measurementNum);
 
     try (TsFileSequenceReader fileReader = new TsFileSequenceReader(FILE_PATH)) {
-      for (String device : fileReader.getAllDevices()) {
+      for (DeviceId device : fileReader.getAllDevices()) {
         Iterator<Map<String, List<ChunkMetadata>>> iterator =
             fileReader.getMeasurementChunkMetadataListMapIterator(device);
 

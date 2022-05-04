@@ -20,6 +20,7 @@ package org.apache.iotdb.tsfile.write.record;
 
 import org.apache.iotdb.tsfile.exception.write.UnSupportedDataTypeException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.utils.Binary;
 import org.apache.iotdb.tsfile.utils.BitMap;
 import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
@@ -45,7 +46,7 @@ public class Tablet {
   private static final String NOT_SUPPORT_DATATYPE = "Data type %s is not supported.";
 
   /** deviceId of this tablet */
-  public String deviceId;
+  public DeviceId deviceId;
 
   /** the list of measurement schemas for creating the tablet */
   private List<MeasurementSchema> schemas;
@@ -72,20 +73,24 @@ public class Tablet {
    * @param schemas the list of measurement schemas for creating the tablet, only measurementId and
    *     type take effects
    */
-  public Tablet(String deviceId, List<MeasurementSchema> schemas) {
+  public Tablet(DeviceId deviceId, List<MeasurementSchema> schemas) {
     this(deviceId, schemas, DEFAULT_SIZE);
+  }
+
+  public Tablet(String deviceId, List<MeasurementSchema> schemas) {
+    this(new DeviceId(deviceId), schemas, DEFAULT_SIZE);
   }
 
   /**
    * Return a tablet with the specified number of rows (maxBatchSize). Only call this constructor
    * directly for testing purposes. Tablet should normally always be default size.
    *
-   * @param deviceId the name of the device specified to be written in
+   * @param deviceId the id of the device specified to be written in
    * @param schemas the list of measurement schemas for creating the row batch, only measurementId
    *     and type take effects
    * @param maxRowNumber the maximum number of rows for this tablet
    */
-  public Tablet(String deviceId, List<MeasurementSchema> schemas, int maxRowNumber) {
+  public Tablet(DeviceId deviceId, List<MeasurementSchema> schemas, int maxRowNumber) {
     this.deviceId = deviceId;
     this.schemas = new ArrayList<>(schemas);
     this.maxRowNumber = maxRowNumber;
@@ -102,8 +107,16 @@ public class Tablet {
     reset();
   }
 
-  public void setDeviceId(String deviceId) {
+  public Tablet(String deviceId, List<MeasurementSchema> schemas, int maxRowNumber) {
+    this(new DeviceId(deviceId), schemas, maxRowNumber);
+  }
+
+  public void setDeviceId(DeviceId deviceId) {
     this.deviceId = deviceId;
+  }
+
+  public void setDeviceId(String deviceId) {
+    this.deviceId = new DeviceId(deviceId);
   }
 
   public void setSchemas(List<MeasurementSchema> schemas) {

@@ -19,11 +19,9 @@
 
 package org.apache.iotdb.tsfile.file.header;
 
-import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
 import org.apache.iotdb.tsfile.file.MetaMarker;
 import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.reader.TsFileInput;
-import org.apache.iotdb.tsfile.utils.ReadWriteForEncodingUtils;
 import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
 
 import java.io.IOException;
@@ -82,16 +80,16 @@ public class ChunkGroupHeader {
     if (!markerRead) {
       offsetVar++;
     }
-    String deviceID = input.readVarIntString(offsetVar);
-    return new ChunkGroupHeader(deviceID);
+    DeviceId deviceId = DeviceId.deserializeFrom(input, offsetVar);
+    return new ChunkGroupHeader(deviceId);
   }
 
   public int getSerializedSize() {
     return serializedSize;
   }
 
-  public String getDeviceIdString() {
-    return deviceId.toString();
+  public DeviceId getDeviceId() {
+    return deviceId;
   }
 
   /**
@@ -104,7 +102,7 @@ public class ChunkGroupHeader {
   public int serializeTo(OutputStream outputStream) throws IOException {
     int length = 0;
     length += ReadWriteIOUtils.write(MARKER, outputStream);
-    length += ReadWriteIOUtils.writeVar(deviceID, outputStream);
+    length += deviceId.serializeTo(outputStream);
     return length;
   }
 
@@ -112,7 +110,7 @@ public class ChunkGroupHeader {
   public String toString() {
     return "ChunkGroupHeader{"
         + "deviceID='"
-        + deviceId.toString()
+        + deviceId.getDeviceIdString()
         + '\''
         + ", serializedSize="
         + serializedSize

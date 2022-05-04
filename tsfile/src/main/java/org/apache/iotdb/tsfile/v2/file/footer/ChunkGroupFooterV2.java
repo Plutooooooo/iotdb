@@ -19,9 +19,12 @@
 
 package org.apache.iotdb.tsfile.v2.file.footer;
 
+import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
 import org.apache.iotdb.tsfile.file.MetaMarker;
 import org.apache.iotdb.tsfile.file.header.ChunkGroupHeader;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.reader.TsFileInput;
+import org.apache.iotdb.tsfile.utils.ReadWriteForEncodingUtils;
 import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
 
 import java.io.IOException;
@@ -46,12 +49,12 @@ public class ChunkGroupFooterV2 {
       }
     }
 
-    String deviceID = ReadWriteIOUtils.readString(inputStream);
+    DeviceId deviceId = DeviceId.deserializeFrom(inputStream);
     // dataSize
     ReadWriteIOUtils.readLong(inputStream);
     // numOfChunks
     ReadWriteIOUtils.readInt(inputStream);
-    return new ChunkGroupHeader(deviceID);
+    return new ChunkGroupHeader(deviceId);
   }
 
   /**
@@ -70,15 +73,22 @@ public class ChunkGroupFooterV2 {
     buffer.flip();
     int size = buffer.getInt();
     offsetVar += Integer.BYTES;
-    buffer = ByteBuffer.allocate(getSerializedSize(size));
+    String[] nodes = new String[size];
+    for (int i = 0; i < size; i++) {
+      String node = input.readVarIntString(offsetVar);
+      int nodeLen = node.getBytes(TSFileConfig.STRING_CHARSET).length;
+      offsetVar += (nodeLen + ReadWriteForEncodingUtils.varIntSize(nodeLen));
+      nodes[i] = node;
+    }
+    DeviceId deviceId = new DeviceId(nodes);
+    buffer = ByteBuffer.allocate(Long.BYTES + Integer.BYTES);
     ReadWriteIOUtils.readAsPossible(input, offsetVar, buffer);
     buffer.flip();
-    String deviceID = ReadWriteIOUtils.readStringWithLength(buffer, size);
     // dataSize
     ReadWriteIOUtils.readLong(buffer);
     // numOfChunks
     ReadWriteIOUtils.readInt(buffer);
-    return new ChunkGroupHeader(deviceID);
+    return new ChunkGroupHeader(deviceId);
   }
 
   private static int getSerializedSize(int deviceIdLength) {

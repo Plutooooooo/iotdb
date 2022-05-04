@@ -258,7 +258,7 @@ public class TsFileSketchTool {
             reader.readChunkGroupHeader(nextChunkGroupHeaderPos, false);
         printlnBoth(pw, String.format("%20s", "") + "|\t\t[marker] 0");
         printlnBoth(
-            pw, String.format("%20s", "") + "|\t\t[deviceID] " + chunkGroupHeader.getDeviceIdString());
+            pw, String.format("%20s", "") + "|\t\t[deviceID] " + chunkGroupHeader.getDeviceId());
         // chunk begins
         for (ChunkMetadata chunkMetadata : chunkGroupMetadata.getChunkMetadataList()) {
           Chunk chunk = reader.readMemChunk(chunkMetadata);

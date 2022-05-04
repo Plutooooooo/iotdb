@@ -27,6 +27,7 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.fileSystem.FSFactoryProducer;
 import org.apache.iotdb.tsfile.read.TsFileCheckStatus;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
 
@@ -68,7 +69,7 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
   private long maxPlanIndex = Long.MIN_VALUE;
 
   /** all chunk group metadata which have been serialized on disk. */
-  private final Map<String, Map<String, List<ChunkMetadata>>> metadatasForQuery = new HashMap<>();
+  private final Map<DeviceId, Map<String, List<ChunkMetadata>>> metadatasForQuery = new HashMap<>();
 
   /**
    * @param file a given tsfile path you want to (continue to) write
@@ -220,7 +221,7 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
     return chunkMetadataList;
   }
 
-  public Map<String, Map<String, List<ChunkMetadata>>> getMetadatasForQuery() {
+  public Map<DeviceId, Map<String, List<ChunkMetadata>>> getMetadatasForQuery() {
     return metadatasForQuery;
   }
 
@@ -234,7 +235,7 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
       for (ChunkGroupMetadata chunkGroupMetadata : newlyFlushedMetadataList) {
         List<ChunkMetadata> rowMetaDataList = chunkGroupMetadata.getChunkMetadataList();
 
-        String device = chunkGroupMetadata.getDeviceId();
+        DeviceId device = chunkGroupMetadata.getDeviceId();
         for (ChunkMetadata chunkMetaData : rowMetaDataList) {
           String measurementId = chunkMetaData.getMeasurementUid();
           if (!metadatasForQuery.containsKey(device)) {

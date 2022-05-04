@@ -31,6 +31,7 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.fileSystem.FSFactoryProducer;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.utils.MeasurementGroup;
 import org.apache.iotdb.tsfile.utils.Pair;
@@ -233,12 +234,15 @@ public class MetadataIndexConstructorTest {
       }
       assertFalse(iterator.hasNext());
 
-      Map<String, List<TimeseriesMetadata>> allTimeseriesMetadata =
+      Map<DeviceId, List<TimeseriesMetadata>> allTimeseriesMetadata =
           reader.getAllTimeseriesMetadata();
       for (int j = 0; j < actualDevices.size(); j++) {
         for (int i = 0; i < actualMeasurements.get(j).size(); i++) {
           assertEquals(
-              allTimeseriesMetadata.get(actualDevices.get(j)).get(i).getMeasurementId(),
+              allTimeseriesMetadata
+                  .get(new DeviceId(actualDevices.get(j)))
+                  .get(i)
+                  .getMeasurementId(),
               correctFirstMeasurements.get(j).get(i));
         }
       }

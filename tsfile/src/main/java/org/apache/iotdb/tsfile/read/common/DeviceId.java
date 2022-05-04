@@ -18,31 +18,43 @@
  */
 package org.apache.iotdb.tsfile.read.common;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
 import org.apache.iotdb.tsfile.common.constant.TsFileConstant;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import org.apache.iotdb.tsfile.exception.TsFileRuntimeException;
 import org.apache.iotdb.tsfile.read.reader.TsFileInput;
 import org.apache.iotdb.tsfile.utils.ReadWriteForEncodingUtils;
 import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
 
-public class DeviceId {
+import org.apache.commons.lang.StringEscapeUtils;
 
-  private String[] nodes;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-  public DeviceId(String deviceId) {}
+public class DeviceId implements Comparable<DeviceId> {
 
-  public DeviceId(String[] nodes) {}
+  private final String[] nodes;
 
+  /** this field dose not need to be serialized. * */
+  private String deviceIdString;
 
-  public static String[] splitPathToDetachedPath(String deviceId) throws TsFileRuntimeException {
+  public DeviceId(String deviceId) {
+    nodes = splitDeviceIdToNodes(deviceId);
+    deviceIdString = deviceId;
+  }
+
+  public DeviceId(String[] nodes) {
+    this.nodes = nodes;
+  }
+
+  public static String[] splitDeviceIdToNodes(String deviceId) throws TsFileRuntimeException {
+    if (deviceId.length() == 0) {
+      throw new TsFileRuntimeException("Length of deviceId should be greater than 0.");
+    }
     // NodeName is treated as identifier. When parsing identifier, unescapeJava is called.
     // Therefore we call unescapeJava here.
     deviceId = StringEscapeUtils.unescapeJava(deviceId);
@@ -76,7 +88,7 @@ public class DeviceId {
               throw new TsFileRuntimeException(deviceId);
             }
             endIndex = deviceId.indexOf(TsFileConstant.BACK_QUOTE, endIndex + 2);
-          } else if (afterQuote == '.') {
+          } else if (afterQuote == TsFileConstant.PATH_SEPARATOR_CHAR) {
             break;
           } else {
             throw new TsFileRuntimeException(deviceId);
@@ -109,17 +121,26 @@ public class DeviceId {
     return this.nodes;
   }
 
-  public void serializeTo(ByteBuffer byteBuffer){
-    ReadWriteIOUtils.write(nodes.length,byteBuffer);
-    for(String node : nodes){
-      ReadWriteIOUtils.write(node,byteBuffer);
+  public int serializeTo(ByteBuffer byteBuffer) {
+    int len = ReadWriteIOUtils.write(nodes.length, byteBuffer);
+    for (String node : nodes) {
+      len += ReadWriteIOUtils.write(node, byteBuffer);
     }
+    return len;
   }
 
-  public static DeviceId deserializeFrom(ByteBuffer byteBuffer){
+  public int serializeTo(OutputStream outputStream) throws IOException {
+    int len = ReadWriteIOUtils.write(nodes.length, outputStream);
+    for (String node : nodes) {
+      len += ReadWriteIOUtils.write(node, outputStream);
+    }
+    return len;
+  }
+
+  public static DeviceId deserializeFrom(ByteBuffer byteBuffer) {
     int size = ReadWriteIOUtils.readInt(byteBuffer);
     String[] nodes = new String[size];
-    for(int i=0;i<size;i++){
+    for (int i = 0; i < size; i++) {
       nodes[i] = ReadWriteIOUtils.readString(byteBuffer);
     }
     return new DeviceId(nodes);
@@ -128,32 +149,54 @@ public class DeviceId {
   public static DeviceId deserializeFrom(InputStream inputStream) throws IOException {
     int size = ReadWriteIOUtils.readInt(inputStream);
     String[] nodes = new String[size];
-    for(int i=0;i<size;i++){
+    for (int i = 0; i < size; i++) {
       nodes[i] = ReadWriteIOUtils.readString(inputStream);
     }
     return new DeviceId(nodes);
   }
 
-  public static DeviceId deserializeFrom(TsFileInput input, long offset)
-      throws IOException {
+  public static DeviceId deserializeFrom(TsFileInput input, long offset) throws IOException {
     long offsetVar = offset;
     ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
     input.read(buffer, offsetVar);
     buffer.flip();
     int size = buffer.getInt();
     offsetVar += Integer.BYTES;
-    String deviceID = input.readVarIntString(offsetVar);
-    return new ChunkGroupHeader(deviceID);
+    String[] nodes = new String[size];
+    for (int i = 0; i < size; i++) {
+      String node = input.readVarIntString(offsetVar);
+      int nodeLen = node.getBytes(TSFileConfig.STRING_CHARSET).length;
+      offsetVar += (nodeLen + ReadWriteForEncodingUtils.varIntSize(nodeLen));
+      nodes[i] = node;
+    }
+    return new DeviceId(nodes);
   }
 
-  public int getSerializedSize(){
+  public int getSerializedSize() {
     int len = 0;
     len += ReadWriteForEncodingUtils.varIntSize(nodes.length);
-    for(String node:nodes){
+    for (String node : nodes) {
       int nodeLen = node.getBytes(TSFileConfig.STRING_CHARSET).length;
       len += (nodeLen + ReadWriteForEncodingUtils.varIntSize(nodeLen));
     }
     return len;
+  }
+
+  public String getDeviceIdString() {
+    if (deviceIdString == null) {
+      StringBuilder s = new StringBuilder(parseNodeString(nodes[0]));
+      for (int i = 1; i < nodes.length; i++) {
+        s.append(TsFileConstant.PATH_SEPARATOR);
+        s.append(parseNodeString(nodes[i]));
+      }
+      deviceIdString = s.toString();
+    }
+    return deviceIdString;
+  }
+
+  @Override
+  public String toString() {
+    return getDeviceIdString();
   }
 
   @Override
@@ -171,5 +214,25 @@ public class DeviceId {
   @Override
   public int hashCode() {
     return Arrays.hashCode(nodes);
+  }
+
+  /**
+   * wrap node that has . or ` in it with ``
+   *
+   * @param node
+   * @return
+   */
+  protected String parseNodeString(String node) {
+    node = node.replace("`", "``");
+    if (node.contains(TsFileConstant.BACK_QUOTE_STRING)
+        || node.contains(TsFileConstant.PATH_SEPARATOR)) {
+      node = String.format("`%s`", node);
+    }
+    return node;
+  }
+
+  @Override
+  public int compareTo(DeviceId o) {
+    return 0;
   }
 }

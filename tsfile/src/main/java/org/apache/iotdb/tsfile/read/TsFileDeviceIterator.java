@@ -30,6 +30,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 
+/**
+ * this class is used by server module, we want to keep DeviceId inside TsFile-module so it is not
+ * Iterator<Pair<DeviceId, Boolean>> *
+ */
 public class TsFileDeviceIterator implements Iterator<Pair<String, Boolean>> {
   private final TsFileSequenceReader reader;
   private final Queue<Pair<String, Pair<Long, Long>>> queue;

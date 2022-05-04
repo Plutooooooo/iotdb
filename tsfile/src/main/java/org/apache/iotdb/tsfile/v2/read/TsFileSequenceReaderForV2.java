@@ -33,6 +33,7 @@ import org.apache.iotdb.tsfile.file.metadata.enums.MetadataIndexNodeType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
 import org.apache.iotdb.tsfile.read.common.Chunk;
+import org.apache.iotdb.tsfile.read.common.DeviceId;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.read.reader.TsFileInput;
 import org.apache.iotdb.tsfile.utils.Pair;
@@ -240,13 +241,16 @@ public class TsFileSequenceReaderForV2 extends TsFileSequenceReader implements A
 
   @SuppressWarnings("squid:S3776")
   @Override
-  public List<ITimeSeriesMetadata> readITimeseriesMetadata(String deviceId, Set<String> measurements)
-      throws IOException {
+  public List<ITimeSeriesMetadata> readITimeseriesMetadata(
+      DeviceId deviceId, Set<String> measurements) throws IOException {
     readFileMetadata();
     MetadataIndexNode deviceMetadataIndexNode = tsFileMetaData.getMetadataIndex();
     Pair<MetadataIndexEntry, Long> metadataIndexPair =
         getMetadataAndEndOffsetV2(
-            deviceMetadataIndexNode, deviceId, MetadataIndexNodeType.INTERNAL_DEVICE, false);
+            deviceMetadataIndexNode,
+            deviceId.getDeviceIdString(),
+            MetadataIndexNodeType.INTERNAL_DEVICE,
+            false);
     if (metadataIndexPair == null) {
       return Collections.emptyList();
     }
@@ -300,19 +304,19 @@ public class TsFileSequenceReaderForV2 extends TsFileSequenceReader implements A
   }
 
   @Override
-  public List<String> getAllDevices() throws IOException {
+  public List<DeviceId> getAllDevices() throws IOException {
     if (tsFileMetaData == null) {
       readFileMetadata();
     }
     return getAllDevicesV2(tsFileMetaData.getMetadataIndex());
   }
 
-  private List<String> getAllDevicesV2(MetadataIndexNode metadataIndexNode) throws IOException {
-    List<String> deviceList = new ArrayList<>();
+  private List<DeviceId> getAllDevicesV2(MetadataIndexNode metadataIndexNode) throws IOException {
+    List<DeviceId> deviceList = new ArrayList<>();
     int metadataIndexListSize = metadataIndexNode.getChildren().size();
     if (metadataIndexNode.getNodeType().equals(MetadataIndexNodeType.INTERNAL_MEASUREMENT)) {
       for (MetadataIndexEntry index : metadataIndexNode.getChildren()) {
-        deviceList.add(index.getName());
+        deviceList.add(new DeviceId(index.getName()));
       }
     } else {
       for (int i = 0; i < metadataIndexListSize; i++) {
@@ -326,7 +330,7 @@ public class TsFileSequenceReaderForV2 extends TsFileSequenceReader implements A
           // if node in next level is LEAF_DEVICE, put all devices in node entry into the set
           deviceList.addAll(
               node.getChildren().stream()
-                  .map(MetadataIndexEntry::getName)
+                  .map(x -> new DeviceId(x.getName()))
                   .collect(Collectors.toList()));
         } else {
           // keep traversing
@@ -340,12 +344,12 @@ public class TsFileSequenceReaderForV2 extends TsFileSequenceReader implements A
   /**
    * read all ChunkMetaDatas of given device
    *
-   * @param device name
+   * @param deviceId name
    * @return measurement -> ChunkMetadata list
    * @throws IOException io error
    */
   @Override
-  public Map<String, List<ChunkMetadata>> readChunkMetadataInDevice(String device)
+  public Map<String, List<ChunkMetadata>> readChunkMetadataInDevice(DeviceId deviceId)
       throws IOException {
     if (tsFileMetaData == null) {
       readFileMetadata();
@@ -353,7 +357,7 @@ public class TsFileSequenceReaderForV2 extends TsFileSequenceReader implements A
 
     long start = 0;
     int size = 0;
-    List<TimeseriesMetadata> timeseriesMetadataMap = getDeviceTimeseriesMetadataV2(device);
+    List<TimeseriesMetadata> timeseriesMetadataMap = getDeviceTimeseriesMetadataV2(deviceId);
     for (TimeseriesMetadata timeseriesMetadata : timeseriesMetadataMap) {
       if (start == 0) {
         start = timeseriesMetadata.getOffsetOfChunkMetaDataList();
@@ -387,15 +391,15 @@ public class TsFileSequenceReaderForV2 extends TsFileSequenceReader implements A
   private void generateMetadataIndexV2(
       MetadataIndexEntry metadataIndex,
       ByteBuffer buffer,
-      String deviceId,
+      DeviceId deviceId,
       MetadataIndexNodeType type,
-      Map<String, List<TimeseriesMetadata>> timeseriesMetadataMap)
+      Map<DeviceId, List<TimeseriesMetadata>> timeseriesMetadataMap)
       throws IOException {
     switch (type) {
       case INTERNAL_DEVICE:
       case LEAF_DEVICE:
       case INTERNAL_MEASUREMENT:
-        deviceId = metadataIndex.getName();
+        deviceId = new DeviceId(metadataIndex.getName());
         MetadataIndexNode metadataIndexNode = MetadataIndexNodeV2.deserializeFrom(buffer);
         int metadataIndexListSize = metadataIndexNode.getChildren().size();
         for (int i = 0; i < metadataIndexListSize; i++) {
@@ -429,11 +433,11 @@ public class TsFileSequenceReaderForV2 extends TsFileSequenceReader implements A
   }
 
   @Override
-  public Map<String, List<TimeseriesMetadata>> getAllTimeseriesMetadata() throws IOException {
+  public Map<DeviceId, List<TimeseriesMetadata>> getAllTimeseriesMetadata() throws IOException {
     if (tsFileMetaData == null) {
       readFileMetadata();
     }
-    Map<String, List<TimeseriesMetadata>> timeseriesMetadataMap = new HashMap<>();
+    Map<DeviceId, List<TimeseriesMetadata>> timeseriesMetadataMap = new HashMap<>();
     MetadataIndexNode metadataIndexNode = tsFileMetaData.getMetadataIndex();
     List<MetadataIndexEntry> metadataIndexEntryList = metadataIndexNode.getChildren();
     for (int i = 0; i < metadataIndexEntryList.size(); i++) {
@@ -449,20 +453,24 @@ public class TsFileSequenceReaderForV2 extends TsFileSequenceReader implements A
     return timeseriesMetadataMap;
   }
 
-  private List<TimeseriesMetadata> getDeviceTimeseriesMetadataV2(String device) throws IOException {
+  private List<TimeseriesMetadata> getDeviceTimeseriesMetadataV2(DeviceId deviceId)
+      throws IOException {
     MetadataIndexNode metadataIndexNode = tsFileMetaData.getMetadataIndex();
     Pair<MetadataIndexEntry, Long> metadataIndexPair =
         getMetadataAndEndOffsetV2(
-            metadataIndexNode, device, MetadataIndexNodeType.INTERNAL_DEVICE, true);
+            metadataIndexNode,
+            deviceId.getDeviceIdString(),
+            MetadataIndexNodeType.INTERNAL_DEVICE,
+            true);
     if (metadataIndexPair == null) {
       return Collections.emptyList();
     }
     ByteBuffer buffer = readData(metadataIndexPair.left.getOffset(), metadataIndexPair.right);
-    Map<String, List<TimeseriesMetadata>> timeseriesMetadataMap = new TreeMap<>();
+    Map<DeviceId, List<TimeseriesMetadata>> timeseriesMetadataMap = new TreeMap<>();
     generateMetadataIndexV2(
         metadataIndexPair.left,
         buffer,
-        device,
+        deviceId,
         MetadataIndexNodeType.INTERNAL_MEASUREMENT,
         timeseriesMetadataMap);
     List<TimeseriesMetadata> deviceTimeseriesMetadata = new ArrayList<>();
@@ -587,6 +595,7 @@ public class TsFileSequenceReaderForV2 extends TsFileSequenceReader implements A
    *
    * @return List of ChunkMetaData
    */
+  @Override
   public ArrayList<ChunkMetadata> readChunkMetaDataList(TimeseriesMetadata timeseriesMetaData)
       throws IOException {
     readFileMetadata();

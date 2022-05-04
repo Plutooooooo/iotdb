@@ -128,10 +128,12 @@ public class TsFileGeneratorUtils {
     if (file.exists()) {
       file.delete();
     }
-    if (chunkGroupSize > 0)
+    if (chunkGroupSize > 0) {
       TSFileDescriptor.getInstance().getConfig().setGroupSizeInByte(chunkGroupSize);
-    if (pageSize > 0)
+    }
+    if (pageSize > 0) {
       TSFileDescriptor.getInstance().getConfig().setMaxNumberOfPointsInPage(pageSize);
+    }
     try (TsFileWriter tsFileWriter = new TsFileWriter(file)) {
       // register align timeseries
       List<MeasurementSchema> alignedMeasurementSchemas = new ArrayList<>();
@@ -195,10 +197,12 @@ public class TsFileGeneratorUtils {
     if (file.exists()) {
       file.delete();
     }
-    if (chunkGroupSize > 0)
+    if (chunkGroupSize > 0) {
       TSFileDescriptor.getInstance().getConfig().setGroupSizeInByte(chunkGroupSize);
-    if (pageSize > 0)
+    }
+    if (pageSize > 0) {
       TSFileDescriptor.getInstance().getConfig().setMaxNumberOfPointsInPage(pageSize);
+    }
     try (TsFileWriter tsFileWriter = new TsFileWriter(file)) {
       // register align timeseries
       List<MeasurementSchema> alignedMeasurementSchemas = new ArrayList<>();
@@ -240,10 +244,12 @@ public class TsFileGeneratorUtils {
     if (file.exists()) {
       file.delete();
     }
-    if (chunkGroupSize > 0)
+    if (chunkGroupSize > 0) {
       TSFileDescriptor.getInstance().getConfig().setGroupSizeInByte(chunkGroupSize);
-    if (pageSize > 0)
+    }
+    if (pageSize > 0) {
       TSFileDescriptor.getInstance().getConfig().setMaxNumberOfPointsInPage(pageSize);
+    }
     try (TsFileWriter tsFileWriter = new TsFileWriter(file)) {
       // register nonAlign timeseries
       List<MeasurementSchema> measurementSchemas = new ArrayList<>();

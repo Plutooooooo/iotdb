@@ -174,7 +174,7 @@ public class TsFileSequenceRead {
             System.out.println("[Chunk Group]");
             System.out.println("Chunk Group Header position: " + reader.position());
             ChunkGroupHeader chunkGroupHeader = reader.readChunkGroupHeader();
-            System.out.println("device: " + chunkGroupHeader.getDeviceIdString());
+            System.out.println("device: " + chunkGroupHeader.getDeviceId());
             break;
           case MetaMarker.OPERATION_INDEX_RANGE:
             reader.readPlanIndex();

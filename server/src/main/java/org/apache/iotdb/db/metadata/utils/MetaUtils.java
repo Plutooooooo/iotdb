@@ -82,7 +82,7 @@ public class MetaUtils {
               throw new IllegalPathException(path);
             }
             endIndex = path.indexOf(TsFileConstant.BACK_QUOTE, endIndex + 2);
-          } else if (afterQuote == '.') {
+          } else if (afterQuote == TsFileConstant.PATH_SEPARATOR_CHAR) {
             break;
           } else {
             throw new IllegalPathException(path);
