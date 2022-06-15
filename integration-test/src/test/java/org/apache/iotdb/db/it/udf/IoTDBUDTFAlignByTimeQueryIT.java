@@ -57,8 +57,15 @@ public class IoTDBUDTFAlignByTimeQueryIT {
   protected static final int SLIMIT = 10;
   protected static final int SOFFSET = 2;
 
+  protected static boolean enableSeqSpaceCompaction;
+  protected static boolean enableUnseqSpaceCompaction;
+  protected static boolean enableCrossSpaceCompaction;
+
   @BeforeClass
   public static void setUp() throws Exception {
+    enableSeqSpaceCompaction = ConfigFactory.getConfig().isEnableSeqSpaceCompaction();
+    enableUnseqSpaceCompaction = ConfigFactory.getConfig().isEnableUnseqSpaceCompaction();
+    enableCrossSpaceCompaction = ConfigFactory.getConfig().isEnableCrossSpaceCompaction();
     ConfigFactory.getConfig()
         .setUdfCollectorMemoryBudgetInMB(5)
         .setUdfTransformerMemoryBudgetInMB(5)
@@ -67,6 +74,18 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     createTimeSeries();
     generateData();
     registerUDF();
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    EnvFactory.getEnv().cleanAfterClass();
+    ConfigFactory.getConfig().setEnableSeqSpaceCompaction(enableSeqSpaceCompaction);
+    ConfigFactory.getConfig().setEnableUnseqSpaceCompaction(enableUnseqSpaceCompaction);
+    ConfigFactory.getConfig().setEnableCrossSpaceCompaction(enableCrossSpaceCompaction);
+    ConfigFactory.getConfig()
+        .setUdfCollectorMemoryBudgetInMB(100)
+        .setUdfTransformerMemoryBudgetInMB(100)
+        .setUdfReaderMemoryBudgetInMB(100);
   }
 
   private static void createTimeSeries() {
@@ -133,15 +152,6 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     } catch (SQLException throwable) {
       fail(throwable.getMessage());
     }
-  }
-
-  @AfterClass
-  public static void tearDown() throws Exception {
-    EnvFactory.getEnv().cleanAfterClass();
-    ConfigFactory.getConfig()
-        .setUdfCollectorMemoryBudgetInMB(100)
-        .setUdfTransformerMemoryBudgetInMB(100)
-        .setUdfReaderMemoryBudgetInMB(100);
   }
 
   @Test

@@ -18,7 +18,6 @@
  */
 package org.apache.iotdb.db.it.udf;
 
-import org.apache.iotdb.db.query.udf.example.ExampleUDFConstant;
 import org.apache.iotdb.it.env.ConfigFactory;
 import org.apache.iotdb.it.env.EnvFactory;
 import org.apache.iotdb.itbase.category.LocalStandaloneIT;
@@ -44,8 +43,18 @@ public class IoTDBUDFWindowQueryIT {
 
   protected static final int ITERATION_TIMES = 100_000;
 
+  protected static boolean enableSeqSpaceCompaction;
+  protected static boolean enableUnseqSpaceCompaction;
+  protected static boolean enableCrossSpaceCompaction;
+
   @BeforeClass
   public static void setUp() throws Exception {
+    enableSeqSpaceCompaction = ConfigFactory.getConfig().isEnableSeqSpaceCompaction();
+    enableUnseqSpaceCompaction = ConfigFactory.getConfig().isEnableUnseqSpaceCompaction();
+    enableCrossSpaceCompaction = ConfigFactory.getConfig().isEnableCrossSpaceCompaction();
+    ConfigFactory.getConfig().setEnableSeqSpaceCompaction(false);
+    ConfigFactory.getConfig().setEnableUnseqSpaceCompaction(false);
+    ConfigFactory.getConfig().setEnableCrossSpaceCompaction(false);
     ConfigFactory.getConfig()
         .setUdfCollectorMemoryBudgetInMB(5)
         .setUdfTransformerMemoryBudgetInMB(5)
@@ -54,6 +63,18 @@ public class IoTDBUDFWindowQueryIT {
     createTimeSeries();
     generateData();
     registerUDF();
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    EnvFactory.getEnv().cleanAfterClass();
+    ConfigFactory.getConfig().setEnableSeqSpaceCompaction(enableSeqSpaceCompaction);
+    ConfigFactory.getConfig().setEnableUnseqSpaceCompaction(enableUnseqSpaceCompaction);
+    ConfigFactory.getConfig().setEnableCrossSpaceCompaction(enableCrossSpaceCompaction);
+    ConfigFactory.getConfig()
+        .setUdfCollectorMemoryBudgetInMB(100)
+        .setUdfTransformerMemoryBudgetInMB(100)
+        .setUdfReaderMemoryBudgetInMB(100);
   }
 
   private static void createTimeSeries() {
@@ -100,21 +121,12 @@ public class IoTDBUDFWindowQueryIT {
     }
   }
 
-  @AfterClass
-  public static void tearDown() throws Exception {
-    EnvFactory.getEnv().cleanAfterClass();
-    ConfigFactory.getConfig()
-        .setUdfCollectorMemoryBudgetInMB(100)
-        .setUdfTransformerMemoryBudgetInMB(100)
-        .setUdfReaderMemoryBudgetInMB(100);
-  }
-
   @Test
   public void testRowByRow() {
     String sql =
         String.format(
             "select counter(s1, '%s'='%s') from root.vehicle.d1",
-            ExampleUDFConstant.ACCESS_STRATEGY_KEY, ExampleUDFConstant.ACCESS_STRATEGY_ROW_BY_ROW);
+            UDFTestConstant.ACCESS_STRATEGY_KEY, UDFTestConstant.ACCESS_STRATEGY_ROW_BY_ROW);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
         Statement statement = conn.createStatement()) {
@@ -174,9 +186,9 @@ public class IoTDBUDFWindowQueryIT {
     String sql =
         String.format(
             "select accumulator(s1, '%s'='%s', '%s'='%s') from root.vehicle.d1",
-            ExampleUDFConstant.ACCESS_STRATEGY_KEY,
-            ExampleUDFConstant.ACCESS_STRATEGY_SLIDING_SIZE,
-            ExampleUDFConstant.WINDOW_SIZE_KEY,
+            UDFTestConstant.ACCESS_STRATEGY_KEY,
+            UDFTestConstant.ACCESS_STRATEGY_SLIDING_SIZE,
+            UDFTestConstant.WINDOW_SIZE_KEY,
             windowSize);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
@@ -208,9 +220,9 @@ public class IoTDBUDFWindowQueryIT {
     sql =
         String.format(
             "select window_start_end(s1, '%s'='%s', '%s'='%s') from root.vehicle.d1",
-            ExampleUDFConstant.ACCESS_STRATEGY_KEY,
-            ExampleUDFConstant.ACCESS_STRATEGY_SLIDING_SIZE,
-            ExampleUDFConstant.WINDOW_SIZE_KEY,
+            UDFTestConstant.ACCESS_STRATEGY_KEY,
+            UDFTestConstant.ACCESS_STRATEGY_SLIDING_SIZE,
+            UDFTestConstant.WINDOW_SIZE_KEY,
             windowSize);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
@@ -331,15 +343,15 @@ public class IoTDBUDFWindowQueryIT {
     String sql =
         String.format(
             "select accumulator(s1, s1, s1, '%s'='%s', '%s'='%s', '%s'='%s', '%s'='%s', '%s'='%s') from root.vehicle.d1",
-            ExampleUDFConstant.ACCESS_STRATEGY_KEY,
-            ExampleUDFConstant.ACCESS_STRATEGY_SLIDING_TIME,
-            ExampleUDFConstant.TIME_INTERVAL_KEY,
+            UDFTestConstant.ACCESS_STRATEGY_KEY,
+            UDFTestConstant.ACCESS_STRATEGY_SLIDING_TIME,
+            UDFTestConstant.TIME_INTERVAL_KEY,
             timeInterval,
-            ExampleUDFConstant.SLIDING_STEP_KEY,
+            UDFTestConstant.SLIDING_STEP_KEY,
             slidingStep,
-            ExampleUDFConstant.DISPLAY_WINDOW_BEGIN_KEY,
+            UDFTestConstant.DISPLAY_WINDOW_BEGIN_KEY,
             displayWindowBegin,
-            ExampleUDFConstant.DISPLAY_WINDOW_END_KEY,
+            UDFTestConstant.DISPLAY_WINDOW_END_KEY,
             displayWindowEnd);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
@@ -372,15 +384,15 @@ public class IoTDBUDFWindowQueryIT {
     sql =
         String.format(
             "select window_start_end(s1, s1, s1, '%s'='%s', '%s'='%s', '%s'='%s', '%s'='%s', '%s'='%s') from root.vehicle.d1",
-            ExampleUDFConstant.ACCESS_STRATEGY_KEY,
-            ExampleUDFConstant.ACCESS_STRATEGY_SLIDING_TIME,
-            ExampleUDFConstant.TIME_INTERVAL_KEY,
+            UDFTestConstant.ACCESS_STRATEGY_KEY,
+            UDFTestConstant.ACCESS_STRATEGY_SLIDING_TIME,
+            UDFTestConstant.TIME_INTERVAL_KEY,
             timeInterval,
-            ExampleUDFConstant.SLIDING_STEP_KEY,
+            UDFTestConstant.SLIDING_STEP_KEY,
             slidingStep,
-            ExampleUDFConstant.DISPLAY_WINDOW_BEGIN_KEY,
+            UDFTestConstant.DISPLAY_WINDOW_BEGIN_KEY,
             displayWindowBegin,
-            ExampleUDFConstant.DISPLAY_WINDOW_END_KEY,
+            UDFTestConstant.DISPLAY_WINDOW_END_KEY,
             displayWindowEnd);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
@@ -440,7 +452,7 @@ public class IoTDBUDFWindowQueryIT {
     String sql =
         String.format(
             "select time_window_tester(s1, '%s'='%s') from root.vehicle.d1",
-            ExampleUDFConstant.TIME_INTERVAL_KEY, timeInterval);
+            UDFTestConstant.TIME_INTERVAL_KEY, timeInterval);
 
     int displayWindowBegin = 0;
     int displayWindowEnd = ITERATION_TIMES;
@@ -474,7 +486,7 @@ public class IoTDBUDFWindowQueryIT {
     sql =
         String.format(
             "select window_start_end(s1, '%s'='%s') from root.vehicle.d1",
-            ExampleUDFConstant.TIME_INTERVAL_KEY, timeInterval);
+            UDFTestConstant.TIME_INTERVAL_KEY, timeInterval);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
         Statement statement = conn.createStatement()) {
@@ -632,11 +644,11 @@ public class IoTDBUDFWindowQueryIT {
     sql =
         String.format(
             "select window_start_end(s1, '%s'='%s', '%s'='%s', '%s'='%s'), size_window_1(s1, '%s'='%s') from root.vehicle.d1",
-            ExampleUDFConstant.ACCESS_STRATEGY_KEY,
-            ExampleUDFConstant.ACCESS_STRATEGY_SLIDING_SIZE,
-            ExampleUDFConstant.WINDOW_SIZE_KEY,
+            UDFTestConstant.ACCESS_STRATEGY_KEY,
+            UDFTestConstant.ACCESS_STRATEGY_SLIDING_SIZE,
+            UDFTestConstant.WINDOW_SIZE_KEY,
             windowSize,
-            ExampleUDFConstant.SLIDING_STEP_KEY,
+            UDFTestConstant.SLIDING_STEP_KEY,
             slidingStep,
             "consumptionPoint",
             consumptionPoint);
