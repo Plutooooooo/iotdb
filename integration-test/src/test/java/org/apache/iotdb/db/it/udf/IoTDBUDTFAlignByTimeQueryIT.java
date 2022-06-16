@@ -164,9 +164,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     Set<Integer> s2 = new HashSet<>(Arrays.asList(3, 7));
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
-
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       int count = 0;
       int columnCount = resultSet.getMetaData().getColumnCount();
       assertEquals(1 + 8, columnCount);
@@ -204,8 +203,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     String sqlStr = "select udf(*, *) from root.vehicle.d1";
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       int count = 0;
       int columnCount = resultSet.getMetaData().getColumnCount();
       assertEquals(1 + 4, columnCount);
@@ -230,8 +229,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     Set<Integer> s1OrS2 = new HashSet<>(Arrays.asList(0, 1, 6, 7, 12, 13));
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       int count = 0;
       int columnCount = resultSet.getMetaData().getColumnCount();
       assertEquals(1 + 14, columnCount);
@@ -263,8 +262,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     Set<Integer> s1OrS2 = new HashSet<>(Arrays.asList(4, 5));
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       int count = 0;
       int columnCount = resultSet.getMetaData().getColumnCount();
       assertEquals(1 + 10, columnCount);
@@ -295,9 +294,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     String sqlStr = "select multiplier(s2, 'a'='2', 'b'='5') from root.vehicle.d1";
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
-
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       assertEquals(1 + 1, resultSet.getMetaData().getColumnCount());
       assertEquals("Time", resultSet.getMetaData().getColumnName(1));
       assertEquals(
@@ -320,9 +318,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     String sqlStr = "select max(s1), max(s2) from root.vehicle.d4";
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
-
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       assertEquals(1 + 2, resultSet.getMetaData().getColumnCount());
 
       assertEquals("Time", resultSet.getMetaData().getColumnName(1));
@@ -350,9 +347,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     String sqlStr = "select terminate(s1), terminate(s2) from root.vehicle.d4";
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
-
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       assertEquals(1 + 2, resultSet.getMetaData().getColumnCount());
 
       assertEquals("Time", resultSet.getMetaData().getColumnName(1));
@@ -442,8 +438,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     Set<Integer> s2 = new HashSet<>(Arrays.asList(3, 7));
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       int index = (int) (0.25 * ITERATION_TIMES);
       int columnCount = resultSet.getMetaData().getColumnCount();
       assertEquals(1 + 8, columnCount);
@@ -481,8 +477,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     Set<Integer> s1OrS2 = new HashSet<>(Arrays.asList(4, 5));
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       int index = (int) (0.25 * ITERATION_TIMES);
       int columnCount = resultSet.getMetaData().getColumnCount();
       assertEquals(1 + 10, columnCount);
@@ -518,8 +514,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     Set<Integer> s2 = new HashSet<>(Arrays.asList(3, 7));
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       int index = (int) (0.3 * ITERATION_TIMES);
       int columnCount = resultSet.getMetaData().getColumnCount();
       assertEquals(1 + 8, columnCount);
@@ -568,8 +564,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
     Set<Integer> s2 = new HashSet<>(Arrays.asList(10, 11, 22, 23));
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       int index = (int) (0.3 * ITERATION_TIMES);
       int columnCount = resultSet.getMetaData().getColumnCount();
       assertEquals(1 + 4 * 2 + 4 + 4 * 2 + 4, columnCount);
@@ -599,8 +595,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
                 (int) (0.3 * ITERATION_TIMES), (int) (0.7 * ITERATION_TIMES));
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       int index = (int) (0.3 * ITERATION_TIMES);
       int columnCount = resultSet.getMetaData().getColumnCount();
       assertEquals(1 + 6 + 2 * 2 * 3 * 2 * 3, columnCount); // time + * + 2 * udf(*, *)
@@ -627,8 +623,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
             + String.format(" limit %d offset %d", LIMIT, OFFSET);
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       int index = (int) (0.3 * ITERATION_TIMES) + OFFSET;
       int columnCount = resultSet.getMetaData().getColumnCount();
       assertEquals(1 + 6 + 2 * 2 * 3 * 2 * 3, columnCount); // time + * + 2 * udf(*, *)
@@ -655,8 +651,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
             + String.format(" slimit %d soffset %d", SLIMIT, SOFFSET);
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       int index = (int) (0.3 * ITERATION_TIMES);
       int columnCount = resultSet.getMetaData().getColumnCount();
       assertEquals(1 + SLIMIT, columnCount);
@@ -683,9 +679,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
                 (int) (0.3 * ITERATION_TIMES), (int) (0.7 * ITERATION_TIMES));
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
-
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       assertEquals(1 + 2, resultSet.getMetaData().getColumnCount());
 
       assertEquals("Time", resultSet.getMetaData().getColumnName(1));
@@ -714,9 +709,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
                 (int) (0.3 * ITERATION_TIMES), (int) (0.7 * ITERATION_TIMES));
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
-
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       assertEquals(1 + 2, resultSet.getMetaData().getColumnCount());
 
       assertEquals("Time", resultSet.getMetaData().getColumnName(1));
@@ -749,9 +743,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
                 (int) (0.3 * ITERATION_TIMES), (int) (0.7 * ITERATION_TIMES));
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
-
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       assertEquals(1 + 2, resultSet.getMetaData().getColumnCount());
 
       assertEquals("Time", resultSet.getMetaData().getColumnName(1));
@@ -789,8 +782,8 @@ public class IoTDBUDTFAlignByTimeQueryIT {
         "select max(s100), udf(*, s100), udf(*, s100), udf(s100, s100) from root.vehicle.d4";
 
     try (Connection connection = EnvFactory.getEnv().getConnection();
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sqlStr);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sqlStr)) {
       assertEquals(1, resultSet.getMetaData().getColumnCount());
       assertEquals("Time", resultSet.getMetaData().getColumnName(1));
     } catch (SQLException throwable) {

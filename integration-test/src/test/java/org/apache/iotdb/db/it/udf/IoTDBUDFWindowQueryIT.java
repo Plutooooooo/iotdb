@@ -129,8 +129,8 @@ public class IoTDBUDFWindowQueryIT {
             UDFTestConstant.ACCESS_STRATEGY_KEY, UDFTestConstant.ACCESS_STRATEGY_ROW_BY_ROW);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
-        Statement statement = conn.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sql);
+        Statement statement = conn.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql)) {
       int count = 0;
       assertEquals(2, resultSet.getMetaData().getColumnCount());
       while (resultSet.next()) {
@@ -192,8 +192,8 @@ public class IoTDBUDFWindowQueryIT {
             windowSize);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
-        Statement statement = conn.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sql);
+        Statement statement = conn.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql)) {
       assertEquals(2, resultSet.getMetaData().getColumnCount());
 
       int count = 0;
@@ -226,8 +226,8 @@ public class IoTDBUDFWindowQueryIT {
             windowSize);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
-        Statement statement = conn.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sql);
+        Statement statement = conn.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql)) {
       assertEquals(2, resultSet.getMetaData().getColumnCount());
 
       int count = 0;
@@ -355,8 +355,8 @@ public class IoTDBUDFWindowQueryIT {
             displayWindowEnd);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
-        Statement statement = conn.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sql);
+        Statement statement = conn.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql)) {
       assertEquals(2, resultSet.getMetaData().getColumnCount());
 
       int count = 0;
@@ -396,8 +396,8 @@ public class IoTDBUDFWindowQueryIT {
             displayWindowEnd);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
-        Statement statement = conn.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sql);
+        Statement statement = conn.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql)) {
       assertEquals(2, resultSet.getMetaData().getColumnCount());
 
       int count = 0;
@@ -457,8 +457,8 @@ public class IoTDBUDFWindowQueryIT {
     int displayWindowBegin = 0;
     int displayWindowEnd = ITERATION_TIMES;
     try (Connection conn = EnvFactory.getEnv().getConnection();
-        Statement statement = conn.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sql);
+        Statement statement = conn.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql)) {
       assertEquals(2, resultSet.getMetaData().getColumnCount());
 
       int count = 0;
@@ -489,8 +489,8 @@ public class IoTDBUDFWindowQueryIT {
             UDFTestConstant.TIME_INTERVAL_KEY, timeInterval);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
-        Statement statement = conn.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sql);
+        Statement statement = conn.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql)) {
       assertEquals(2, resultSet.getMetaData().getColumnCount());
 
       int count = 0;
@@ -606,8 +606,8 @@ public class IoTDBUDFWindowQueryIT {
             consumptionPoint);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
-        Statement statement = conn.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sql);
+        Statement statement = conn.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql)) {
       assertEquals(3, resultSet.getMetaData().getColumnCount());
 
       int count = 0;
@@ -654,8 +654,8 @@ public class IoTDBUDFWindowQueryIT {
             consumptionPoint);
 
     try (Connection conn = EnvFactory.getEnv().getConnection();
-        Statement statement = conn.createStatement()) {
-      ResultSet resultSet = statement.executeQuery(sql);
+        Statement statement = conn.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql)) {
       assertEquals(3, resultSet.getMetaData().getColumnCount());
 
       int count = 0;
