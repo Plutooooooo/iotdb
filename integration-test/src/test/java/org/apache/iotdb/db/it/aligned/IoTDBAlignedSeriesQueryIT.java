@@ -2291,6 +2291,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void selectAllAlignedWithValueFilterAlignByDeviceTest1() {
     String[] retArray =
@@ -2330,7 +2332,6 @@ public class IoTDBAlignedSeriesQueryIT {
             builder.append(",").append(resultSet.getString(index));
           }
           assertEquals(retArray[cnt], builder.toString());
-          System.out.println(builder.toString());
           cnt++;
         }
         assertEquals(retArray.length, cnt);
@@ -2342,6 +2343,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void selectAllAlignedWithValueFilterAlignByDeviceTest2() {
     String[] retArray =
@@ -2390,6 +2393,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void selectAllAlignedWithTimeAndValueFilterAlignByDeviceTest1() {
     String[] retArray =
@@ -2438,6 +2443,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void selectSomeAlignedWithValueFilterAlignByDeviceTest1() {
     String[] retArray =
@@ -2492,6 +2499,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void selectSomeAlignedWithValueFilterAlignByDeviceTest2() {
     String[] retArray =
@@ -2698,6 +2707,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void countAlignedWithValueFilterAlignByDeviceTest() {
     String[] retArray = new String[] {"root.sg1.d1", "11"};
@@ -2735,6 +2746,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void aggregationFuncAlignedWithValueFilterAlignByDeviceTest() {
     String[] retArray =
@@ -2788,6 +2801,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void countAllAlignedWithValueFilterAlignByDeviceTest() {
     String[] retArray = new String[] {"root.sg1.d1", "6", "6", "9", "11", "6"};
@@ -2827,6 +2842,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void aggregationAllAlignedWithValueFilterAlignByDeviceTest() {
     String[] retArray = new String[] {"root.sg1.d1", "160016.0", "11", "1", "13"};
@@ -3111,6 +3128,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void countSumAvgValueFillAlignByDeviceTest() throws SQLException {
     String[] retArray =
@@ -3151,6 +3170,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void maxMinValueTimePreviousUntilLastFillAlignByDeviceTest() throws SQLException {
     String[] retArray =
@@ -3190,6 +3211,8 @@ public class IoTDBAlignedSeriesQueryIT {
     }
   }
 
+  // Remove after supporting value filter
+  @Ignore
   @Test
   public void maxMinValueTimeValueFillAlignByDeviceTest() throws SQLException {
     String[] retArray =
